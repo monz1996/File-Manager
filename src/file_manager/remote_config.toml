@@ -1,4 +1,7 @@
-root_path = "D:/old but gold"
+path = "D:"
+
+
+root_path = "D:/"
 
 [anime]
 path = "Anime"
@@ -32,3 +35,12 @@ path = "Songs"
 
 [videos]
 path = "videos"
+
+[games]
+path = "Games"
+
+[series]
+path = "series"
+
+[movies]
+path = "Movies"

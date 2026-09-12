@@ -1,2 +1,4 @@
 def main() -> None:
-    print("Hello from file-manager!")
+    from .main import main as run
+
+    run()

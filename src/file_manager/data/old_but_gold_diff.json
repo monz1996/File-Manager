@@ -1,0 +1,11 @@
+{
+    "generated_at": "2026-09-12T15:27:21+03:00",
+    "comparison": "case_sensitive_relative_paths",
+    "local_root": "C:\\Users\\minas\\Desktop\\old but gold",
+    "remote_root": "D:\\old but gold",
+    "local_root_available": true,
+    "remote_root_available": false,
+    "package_count": 0,
+    "packages_with_differences_count": 0,
+    "packages": []
+}
