@@ -1,0 +1,34 @@
+root_path = "D:/old but gold"
+
+[anime]
+path = "Anime"
+
+[books]
+path = "books"
+
+[content]
+path = "Content"
+
+[lol]
+path = "Lol"
+
+[music]
+path = "Music"
+
+[new_folder]
+path = "New folder"
+
+[old_music]
+path = "Old Music"
+
+[pictures]
+path = "pictures"
+
+[recordings]
+path = "Recordings"
+
+[songs]
+path = "Songs"
+
+[videos]
+path = "videos"
