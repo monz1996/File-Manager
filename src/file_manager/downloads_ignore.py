@@ -43,6 +43,11 @@ def is_ignored(name: str, ignored_names: set[str]) -> bool:
     return any(normalized == ignored.casefold() for ignored in ignored_names)
 
 
+def save_ignored_names(names: set[str], ignore_file: Path = DOWNLOADS_IGNORE_FILE) -> None:
+    """Public wrapper to persist the ignored names set."""
+    _save_ignored_names(names, ignore_file)
+
+
 def _save_ignored_names(names: set[str], ignore_file: Path) -> None:
     ignore_file.parent.mkdir(exist_ok=True)
 

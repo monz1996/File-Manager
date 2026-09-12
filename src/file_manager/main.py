@@ -231,7 +231,7 @@ def _run_remote_add_download(section: str, name: str) -> None:
 def _remote_old_but_gold_root() -> Path:
     drive_path, _ = load_remote_config()
 
-    drive_root = Path(f"{drive_path.drive}\\\\\\\\") if drive_path.drive else drive_path
+    drive_root = Path(f"{drive_path.drive}\\") if drive_path.drive else drive_path
 
     return drive_root / "old but gold"
 

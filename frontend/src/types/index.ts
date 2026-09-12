@@ -104,6 +104,22 @@ export interface VideoPackage {
     quality_label: string;
     path: string;
   } | null;
+  shortest_duration_video?: {
+    name: string;
+    duration_seconds: number | null;
+    duration_readable: string | null;
+    size_readable: string;
+    quality_label: string;
+    path: string;
+  } | null;
+  longest_duration_video?: {
+    name: string;
+    duration_seconds: number | null;
+    duration_readable: string | null;
+    size_readable: string;
+    quality_label: string;
+    path: string;
+  } | null;
 }
 
 export interface VideoMetadataResponse {

@@ -5,6 +5,57 @@ from pathlib import Path
 from typing import Any
 
 
+def compare_arbitrary_paths(
+    local_path: Path,
+    remote_path: Path,
+    chunk_size: int = 1024 * 1024,
+) -> dict[str, Any]:
+    """Byte-by-byte comparison of two arbitrary directories (not limited to packages)."""
+    result = {
+        "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
+        "local_path": str(local_path),
+        "remote_path": str(remote_path),
+        "local_available": local_path.exists(),
+        "remote_available": remote_path.exists(),
+        "compared_count": 0,
+        "same_count": 0,
+        "different_count": 0,
+        "only_local_count": 0,
+        "only_remote_count": 0,
+        "same": [],
+        "different": [],
+        "only_local": [],
+        "only_remote": [],
+    }
+
+    if not local_path.exists() or not remote_path.exists():
+        return result
+
+    local_files = _relative_file_paths(local_path)
+    remote_files = _relative_file_paths(remote_path)
+    common_files = sorted(local_files & remote_files, key=str.casefold)
+
+    result["only_local"] = sorted(local_files - remote_files, key=str.casefold)
+    result["only_remote"] = sorted(remote_files - local_files, key=str.casefold)
+    result["only_local_count"] = len(result["only_local"])
+    result["only_remote_count"] = len(result["only_remote"])
+
+    for relative_path in common_files:
+        local_file = local_path / relative_path
+        remote_file = remote_path / relative_path
+        is_same = _same_file_content(local_file, remote_file, chunk_size)
+        result["compared_count"] += 1
+
+        if is_same:
+            result["same_count"] += 1
+            result["same"].append(relative_path)
+        else:
+            result["different_count"] += 1
+            result["different"].append(relative_path)
+
+    return result
+
+
 def compare_old_but_gold_paths(local_root: Path, remote_root: Path) -> dict[str, Any]:
     result = _base_result(local_root, remote_root)
 

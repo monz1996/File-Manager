@@ -1,11 +1,143 @@
 {
-    "generated_at": "2026-09-12T15:27:21+03:00",
+    "generated_at": "2026-09-12T23:23:51+03:00",
     "comparison": "case_sensitive_relative_paths",
     "local_root": "C:\\Users\\minas\\Desktop\\old but gold",
     "remote_root": "D:\\old but gold",
     "local_root_available": true,
-    "remote_root_available": false,
-    "package_count": 0,
-    "packages_with_differences_count": 0,
-    "packages": []
+    "remote_root_available": true,
+    "package_count": 11,
+    "packages_with_differences_count": 1,
+    "packages": [
+        {
+            "package": "Anime",
+            "local_available": true,
+            "remote_available": true,
+            "local_count": 25,
+            "remote_count": 25,
+            "only_local_count": 0,
+            "only_remote_count": 0,
+            "only_local": [],
+            "only_remote": []
+        },
+        {
+            "package": "books",
+            "local_available": true,
+            "remote_available": true,
+            "local_count": 1,
+            "remote_count": 1,
+            "only_local_count": 0,
+            "only_remote_count": 0,
+            "only_local": [],
+            "only_remote": []
+        },
+        {
+            "package": "Content",
+            "local_available": true,
+            "remote_available": true,
+            "local_count": 4,
+            "remote_count": 4,
+            "only_local_count": 0,
+            "only_remote_count": 0,
+            "only_local": [],
+            "only_remote": []
+        },
+        {
+            "package": "Lol",
+            "local_available": true,
+            "remote_available": true,
+            "local_count": 258,
+            "remote_count": 258,
+            "only_local_count": 0,
+            "only_remote_count": 0,
+            "only_local": [],
+            "only_remote": []
+        },
+        {
+            "package": "Music",
+            "local_available": true,
+            "remote_available": true,
+            "local_count": 80,
+            "remote_count": 80,
+            "only_local_count": 0,
+            "only_remote_count": 0,
+            "only_local": [],
+            "only_remote": []
+        },
+        {
+            "package": "New folder",
+            "local_available": true,
+            "remote_available": true,
+            "local_count": 580,
+            "remote_count": 580,
+            "only_local_count": 0,
+            "only_remote_count": 0,
+            "only_local": [],
+            "only_remote": []
+        },
+        {
+            "package": "Old Music",
+            "local_available": true,
+            "remote_available": true,
+            "local_count": 188,
+            "remote_count": 188,
+            "only_local_count": 0,
+            "only_remote_count": 0,
+            "only_local": [],
+            "only_remote": []
+        },
+        {
+            "package": "pictures",
+            "local_available": true,
+            "remote_available": true,
+            "local_count": 51,
+            "remote_count": 51,
+            "only_local_count": 0,
+            "only_remote_count": 0,
+            "only_local": [],
+            "only_remote": []
+        },
+        {
+            "package": "Recordings",
+            "local_available": true,
+            "remote_available": true,
+            "local_count": 19,
+            "remote_count": 19,
+            "only_local_count": 0,
+            "only_remote_count": 0,
+            "only_local": [],
+            "only_remote": []
+        },
+        {
+            "package": "Songs",
+            "local_available": true,
+            "remote_available": true,
+            "local_count": 386,
+            "remote_count": 377,
+            "only_local_count": 9,
+            "only_remote_count": 0,
+            "only_local": [
+                "Anime/desktop.ini",
+                "test1",
+                "test1/testttt - Copy (2).txt",
+                "test1/testttt - Copy.txt",
+                "test1/testttt.txt",
+                "test2",
+                "test2/testttt - Copy (2).txt",
+                "test2/testttt - Copy.txt",
+                "test2/testttt.txt"
+            ],
+            "only_remote": []
+        },
+        {
+            "package": "videos",
+            "local_available": true,
+            "remote_available": true,
+            "local_count": 671,
+            "remote_count": 671,
+            "only_local_count": 0,
+            "only_remote_count": 0,
+            "only_local": [],
+            "only_remote": []
+        }
+    ]
 }

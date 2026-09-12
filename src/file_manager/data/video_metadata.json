@@ -1,12 +1,12 @@
 {
-    "generated_at": "2026-09-12T17:12:43+03:00",
+    "generated_at": "2026-09-13T02:00:26+03:00",
     "source_folder": "C:\\Users\\minas\\Desktop\\old but gold\\videos",
     "package_count": 22,
     "total_size_bytes": 129129249045,
     "total_size_readable": "120.26 GB",
     "video_file_count": 624,
-    "total_duration_seconds": 509027.615,
-    "total_duration_readable": "141:23:48",
+    "total_duration_seconds": 517061.148,
+    "total_duration_readable": "143:37:41",
     "videos_with_known_quality": 614,
     "quality_counts": {
         "1080p": 360,
@@ -204,9 +204,9 @@
                 ".mp4": 29,
                 ".webm": 1
             },
-            "total_duration_seconds": 4008.868,
-            "total_duration_readable": "01:06:49",
-            "videos_with_known_duration": 28,
+            "total_duration_seconds": 4200.409,
+            "total_duration_readable": "01:10:00",
+            "videos_with_known_duration": 29,
             "videos_with_known_quality": 28,
             "quality_counts": {
                 "1080p": 9,
@@ -702,15 +702,15 @@
                     "extension": ".webm",
                     "size_bytes": 2181485,
                     "size_readable": "2.08 MB",
-                    "duration_seconds": null,
-                    "duration_readable": null,
+                    "duration_seconds": 191.541,
+                    "duration_readable": "00:03:12",
                     "quality": {
                         "width": null,
                         "height": null,
                         "resolution": null,
                         "quality_label": null,
                         "aspect_ratio": null,
-                        "estimated_total_bitrate_kbps": null
+                        "estimated_total_bitrate_kbps": 91
                     },
                     "created_at": "2026-08-22T14:48:41+03:00",
                     "modified_at": "2022-04-21T15:04:16+02:00"
@@ -3707,9 +3707,9 @@
                 ".mp4": 35,
                 ".webm": 3
             },
-            "total_duration_seconds": 47766.179,
-            "total_duration_readable": "13:16:06",
-            "videos_with_known_duration": 35,
+            "total_duration_seconds": 52439.083,
+            "total_duration_readable": "14:33:59",
+            "videos_with_known_duration": 38,
             "videos_with_known_quality": 35,
             "quality_counts": {
                 "1080p": 35,
@@ -3798,15 +3798,15 @@
                     "extension": ".webm",
                     "size_bytes": 109313160,
                     "size_readable": "104.25 MB",
-                    "duration_seconds": null,
-                    "duration_readable": null,
+                    "duration_seconds": 273.028,
+                    "duration_readable": "00:04:33",
                     "quality": {
                         "width": null,
                         "height": null,
                         "resolution": null,
                         "quality_label": null,
                         "aspect_ratio": null,
-                        "estimated_total_bitrate_kbps": null
+                        "estimated_total_bitrate_kbps": 3203
                     },
                     "created_at": "2026-09-12T08:45:53+03:00",
                     "modified_at": "2026-09-11T18:19:43+03:00"
@@ -4026,15 +4026,15 @@
                     "extension": ".webm",
                     "size_bytes": 313385570,
                     "size_readable": "298.87 MB",
-                    "duration_seconds": null,
-                    "duration_readable": null,
+                    "duration_seconds": 1269.988,
+                    "duration_readable": "00:21:10",
                     "quality": {
                         "width": null,
                         "height": null,
                         "resolution": null,
                         "quality_label": null,
                         "aspect_ratio": null,
-                        "estimated_total_bitrate_kbps": null
+                        "estimated_total_bitrate_kbps": 1974
                     },
                     "created_at": "2026-09-12T08:45:53+03:00",
                     "modified_at": "2026-09-11T18:21:27+03:00"
@@ -4349,15 +4349,15 @@
                     "extension": ".webm",
                     "size_bytes": 1250931882,
                     "size_readable": "1.17 GB",
-                    "duration_seconds": null,
-                    "duration_readable": null,
+                    "duration_seconds": 3129.888,
+                    "duration_readable": "00:52:10",
                     "quality": {
                         "width": null,
                         "height": null,
                         "resolution": null,
                         "quality_label": null,
                         "aspect_ratio": null,
-                        "estimated_total_bitrate_kbps": null
+                        "estimated_total_bitrate_kbps": 3197
                     },
                     "created_at": "2026-09-12T09:00:32+03:00",
                     "modified_at": "2026-09-11T23:02:58+03:00"
@@ -8430,9 +8430,9 @@
                 ".mp4": 9,
                 ".webm": 1
             },
-            "total_duration_seconds": 7171.812,
-            "total_duration_readable": "01:59:32",
-            "videos_with_known_duration": 9,
+            "total_duration_seconds": 8781.153,
+            "total_duration_readable": "02:26:21",
+            "videos_with_known_duration": 10,
             "videos_with_known_quality": 9,
             "quality_counts": {
                 "1080p": 7,
@@ -8618,15 +8618,15 @@
                     "extension": ".webm",
                     "size_bytes": 1735584190,
                     "size_readable": "1.62 GB",
-                    "duration_seconds": null,
-                    "duration_readable": null,
+                    "duration_seconds": 1609.341,
+                    "duration_readable": "00:26:49",
                     "quality": {
                         "width": null,
                         "height": null,
                         "resolution": null,
                         "quality_label": null,
                         "aspect_ratio": null,
-                        "estimated_total_bitrate_kbps": null
+                        "estimated_total_bitrate_kbps": 8628
                     },
                     "created_at": "2026-08-22T15:07:23+03:00",
                     "modified_at": "2021-10-29T17:59:46+02:00"
@@ -8647,9 +8647,9 @@
                 ".mp4": 186,
                 ".webm": 3
             },
-            "total_duration_seconds": 182753.383,
-            "total_duration_readable": "50:45:53",
-            "videos_with_known_duration": 186,
+            "total_duration_seconds": 184302.342,
+            "total_duration_readable": "51:11:42",
+            "videos_with_known_duration": 189,
             "videos_with_known_quality": 186,
             "quality_counts": {
                 "1080p": 115,
@@ -10622,15 +10622,15 @@
                     "extension": ".webm",
                     "size_bytes": 36419691,
                     "size_readable": "34.73 MB",
-                    "duration_seconds": null,
-                    "duration_readable": null,
+                    "duration_seconds": 658.333,
+                    "duration_readable": "00:10:58",
                     "quality": {
                         "width": null,
                         "height": null,
                         "resolution": null,
                         "quality_label": null,
                         "aspect_ratio": null,
-                        "estimated_total_bitrate_kbps": null
+                        "estimated_total_bitrate_kbps": 443
                     },
                     "created_at": "2026-08-22T15:09:41+03:00",
                     "modified_at": "2022-01-22T03:24:27+02:00"
@@ -10717,15 +10717,15 @@
                     "extension": ".webm",
                     "size_bytes": 28353875,
                     "size_readable": "27.04 MB",
-                    "duration_seconds": null,
-                    "duration_readable": null,
+                    "duration_seconds": 336.342,
+                    "duration_readable": "00:05:36",
                     "quality": {
                         "width": null,
                         "height": null,
                         "resolution": null,
                         "quality_label": null,
                         "aspect_ratio": null,
-                        "estimated_total_bitrate_kbps": null
+                        "estimated_total_bitrate_kbps": 674
                     },
                     "created_at": "2026-08-22T15:09:43+03:00",
                     "modified_at": "2022-01-22T03:22:19+02:00"
@@ -12009,15 +12009,15 @@
                     "extension": ".webm",
                     "size_bytes": 24831076,
                     "size_readable": "23.68 MB",
-                    "duration_seconds": null,
-                    "duration_readable": null,
+                    "duration_seconds": 554.284,
+                    "duration_readable": "00:09:14",
                     "quality": {
                         "width": null,
                         "height": null,
                         "resolution": null,
                         "quality_label": null,
                         "aspect_ratio": null,
-                        "estimated_total_bitrate_kbps": null
+                        "estimated_total_bitrate_kbps": 358
                     },
                     "created_at": "2026-08-22T15:10:13+03:00",
                     "modified_at": "2022-01-22T02:51:20+02:00"
@@ -12266,9 +12266,9 @@
                 ".mp4": 9,
                 ".webm": 1
             },
-            "total_duration_seconds": 497.468,
-            "total_duration_readable": "00:08:17",
-            "videos_with_known_duration": 9,
+            "total_duration_seconds": 508.256,
+            "total_duration_readable": "00:08:28",
+            "videos_with_known_duration": 10,
             "videos_with_known_quality": 9,
             "quality_counts": {
                 "1080p": 3,
@@ -12399,15 +12399,15 @@
                     "extension": ".webm",
                     "size_bytes": 538609,
                     "size_readable": "525.99 KB",
-                    "duration_seconds": null,
-                    "duration_readable": null,
+                    "duration_seconds": 10.788,
+                    "duration_readable": "00:00:11",
                     "quality": {
                         "width": null,
                         "height": null,
                         "resolution": null,
                         "quality_label": null,
                         "aspect_ratio": null,
-                        "estimated_total_bitrate_kbps": null
+                        "estimated_total_bitrate_kbps": 399
                     },
                     "created_at": "2026-08-22T15:10:29+03:00",
                     "modified_at": "2025-10-26T22:48:05+03:00"

@@ -9,7 +9,9 @@ import {
   X, 
   Folder,
   File,
-  ShieldCheck
+  ShieldCheck,
+  Search,
+  Ban,
 } from 'lucide-react';
 import type { NameAuditResponse, NameAuditEntry } from '../../types';
 
@@ -26,6 +28,9 @@ export const NameAuditTab: React.FC<NameAuditTabProps> = ({ onOperationDone }) =
   const [showIgnoredModal, setShowIgnoredModal] = useState(false);
   const [ignoredList, setIgnoredList] = useState<string[]>([]);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({});
+  const [lastSelectedIdx, setLastSelectedIdx] = useState<number | null>(null);
 
   const fetchAudit = async () => {
     setLoading(true);
@@ -36,17 +41,14 @@ export const NameAuditTab: React.FC<NameAuditTabProps> = ({ onOperationDone }) =
         const data: NameAuditResponse = await res.json();
         setAuditData(data);
 
-        // Precompute default suggestions
         const initialEdits: Record<string, string> = {};
         data.issues.forEach((item) => {
           const key = `${item.folder}/${item.path}/${item.name}`;
           const spellingIssue = item.issues.find((i) => i.kind === 'english_spelling' && i.suggestion);
           if (spellingIssue && spellingIssue.token && spellingIssue.suggestion) {
-            // Replace token with suggestion in name
             const fixed = item.name.replace(new RegExp(spellingIssue.token, 'gi'), spellingIssue.suggestion);
             initialEdits[key] = fixed;
           } else {
-            // Clean repeated spaces or punctuation
             let cleaned = item.name
               .replace(/ {2,}/g, ' ')
               .replace(/([!?$#@%&*._-])\1{2,}/g, '$1')
@@ -55,6 +57,7 @@ export const NameAuditTab: React.FC<NameAuditTabProps> = ({ onOperationDone }) =
           }
         });
         setEditedSuggestions(initialEdits);
+        setSelectedItems({});
       }
     } catch (err) {
       console.error(err);
@@ -80,8 +83,10 @@ export const NameAuditTab: React.FC<NameAuditTabProps> = ({ onOperationDone }) =
     fetchIgnored();
   }, [scope]);
 
+  const getItemKey = (item: NameAuditEntry) => `${item.folder}/${item.path}/${item.name}`;
+
   const handleApplySingle = async (item: NameAuditEntry) => {
-    const key = `${item.folder}/${item.path}/${item.name}`;
+    const key = getItemKey(item);
     const newName = editedSuggestions[key] || item.name;
 
     if (newName === item.name) {
@@ -110,7 +115,7 @@ export const NameAuditTab: React.FC<NameAuditTabProps> = ({ onOperationDone }) =
       if (res.ok) {
         setFeedback({
           type: 'success',
-          message: `Renamed '${item.name}' &rarr; '${newName}'. Transaction logged to Activity Tab for undo.`,
+          message: `Renamed '${item.name}' to '${newName}'. Transaction logged to Activity Tab for undo.`,
         });
         fetchAudit();
         if (onOperationDone) onOperationDone();
@@ -121,6 +126,85 @@ export const NameAuditTab: React.FC<NameAuditTabProps> = ({ onOperationDone }) =
       setFeedback({ type: 'error', message: 'Network error while applying rename fix.' });
     } finally {
       setApplying(false);
+    }
+  };
+
+  const handleApplySelected = async () => {
+    const issues = auditData?.issues || [];
+    const selectedKeys = Object.keys(selectedItems).filter((k) => selectedItems[k]);
+    const itemsToRename = issues.filter((item) => selectedKeys.includes(getItemKey(item)));
+
+    if (itemsToRename.length === 0) return;
+
+    setApplying(true);
+    setFeedback(null);
+
+    const payload = {
+      items: itemsToRename.map((item) => {
+        const key = getItemKey(item);
+        return {
+          type: item.type,
+          folder: item.folder,
+          path: item.path,
+          current_name: item.name,
+          new_name: editedSuggestions[key] || item.name,
+        };
+      }),
+    };
+
+    try {
+      const res = await fetch('/api/audit/rename-batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        const successCount = data.results?.filter((r: any) => r.success).length || 0;
+        setFeedback({
+          type: 'success',
+          message: `Batch rename complete: ${successCount} of ${itemsToRename.length} items renamed successfully.`,
+        });
+        setSelectedItems({});
+        fetchAudit();
+        if (onOperationDone) onOperationDone();
+      } else {
+        setFeedback({ type: 'error', message: data.detail || 'Failed to batch rename.' });
+      }
+    } catch (err) {
+      setFeedback({ type: 'error', message: 'Network error during batch rename.' });
+    } finally {
+      setApplying(false);
+    }
+  };
+
+  const handleIgnoreSelected = async () => {
+    const issues = auditData?.issues || [];
+    const selectedKeys = Object.keys(selectedItems).filter((k) => selectedItems[k]);
+    const itemsToIgnore = issues.filter((item) => selectedKeys.includes(getItemKey(item)));
+    const namesToIgnore = itemsToIgnore.map((item) => item.name);
+
+    if (namesToIgnore.length === 0) return;
+
+    try {
+      // Add each ignored name one by one
+      for (const name of namesToIgnore) {
+        await fetch('/api/audit/ignore', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name }),
+        });
+      }
+      const res = await fetch('/api/audit/ignore');
+      if (res.ok) {
+        const data = await res.json();
+        setIgnoredList(data.ignored || []);
+      }
+      setSelectedItems({});
+      fetchAudit();
+      setFeedback({ type: 'success', message: `Ignored ${namesToIgnore.length} items.` });
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -158,18 +242,55 @@ export const NameAuditTab: React.FC<NameAuditTabProps> = ({ onOperationDone }) =
 
   const issues = auditData?.issues || [];
 
+  // Apply instant search filter
+  const filteredIssues = issues.filter((item) =>
+    !searchQuery ||
+    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.folder.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.path.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleSelectWithRange = (key: string, idx: number, e: React.MouseEvent) => {
+    if (e.shiftKey && lastSelectedIdx !== null) {
+      const start = Math.min(lastSelectedIdx, idx);
+      const end = Math.max(lastSelectedIdx, idx);
+      const updated = { ...selectedItems };
+      for (let i = start; i <= end; i++) {
+        if (filteredIssues[i]) {
+          updated[getItemKey(filteredIssues[i])] = true;
+        }
+      }
+      setSelectedItems(updated);
+    } else {
+      setSelectedItems((prev) => ({ ...prev, [key]: !prev[key] }));
+      setLastSelectedIdx(idx);
+    }
+  };
+
+  const handleSelectAll = () => {
+    if (!auditData) return;
+    const allSelected = issues.every((item) => selectedItems[getItemKey(item)]);
+    const updated: Record<string, boolean> = {};
+    if (!allSelected) {
+      issues.forEach((item) => { updated[getItemKey(item)] = true; });
+    }
+    setSelectedItems(updated);
+  };
+
+  const selectedCount = Object.values(selectedItems).filter(Boolean).length;
+
   return (
     <div className="space-y-6">
       {/* Top Banner */}
-      <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950/30 to-slate-900 border border-slate-800 flex flex-wrap items-center justify-between gap-4">
+      <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-800 via-purple-900/30 to-slate-800 border border-slate-700 flex flex-wrap items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
+            <div className="p-2 rounded-xl bg-purple-500/15 text-purple-300 border border-purple-500/30">
               <SpellCheck className="w-5 h-5" />
             </div>
             <div>
               <h2 className="text-lg font-bold text-white">Spelling & Name Quality Audit</h2>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-300">
                 Detect spelling errors, mojibake encoding glitches, repeated letters, and bad formatting across all local files.
               </p>
             </div>
@@ -177,14 +298,13 @@ export const NameAuditTab: React.FC<NameAuditTabProps> = ({ onOperationDone }) =
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Scope selector */}
-          <div className="flex items-center gap-1.5 bg-slate-800/80 p-1 rounded-xl border border-slate-700 text-xs">
+          <div className="flex items-center gap-1.5 bg-slate-900/80 p-1 rounded-xl border border-slate-700 text-xs">
             {(['all', 'files', 'packages'] as const).map((sc) => (
               <button
                 key={sc}
                 onClick={() => setScope(sc)}
                 className={`px-3 py-1.5 rounded-lg font-medium capitalize transition cursor-pointer ${
-                  scope === sc ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
+                  scope === sc ? 'bg-indigo-500 text-white shadow' : 'text-slate-300 hover:text-white'
                 }`}
               >
                 {sc}
@@ -194,7 +314,7 @@ export const NameAuditTab: React.FC<NameAuditTabProps> = ({ onOperationDone }) =
 
           <button
             onClick={() => setShowIgnoredModal(true)}
-            className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-medium transition cursor-pointer flex items-center gap-1.5"
+            className="px-3.5 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 text-xs font-medium transition cursor-pointer flex items-center gap-1.5"
           >
             <EyeOff className="w-3.5 h-3.5 text-amber-400" />
             <span>Ignored ({ignoredList.length})</span>
@@ -203,7 +323,7 @@ export const NameAuditTab: React.FC<NameAuditTabProps> = ({ onOperationDone }) =
           <button
             onClick={fetchAudit}
             disabled={loading}
-            className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-medium transition cursor-pointer flex items-center gap-1.5"
+            className="px-3.5 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 text-xs font-medium transition cursor-pointer flex items-center gap-1.5"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             <span>Re-Audit</span>
@@ -230,38 +350,107 @@ export const NameAuditTab: React.FC<NameAuditTabProps> = ({ onOperationDone }) =
         </div>
       )}
 
-      {/* Summary Note */}
-      <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between text-xs text-slate-400">
-        <span>
-          Found <strong className="text-white">{issues.length}</strong> suspicious items ({ignoredList.length} ignored).
-        </span>
-        <span className="text-[11px] text-slate-500">{auditData?.arabic_note}</span>
+      {/* Summary + Actions Bar */}
+      <div className="p-3 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-3">
+          <span className="text-slate-300">
+            Found <strong className="text-white">{issues.length}</strong> suspicious items ({ignoredList.length} ignored).
+          </span>
+          {selectedCount > 0 && (
+            <span className="text-indigo-300 font-semibold bg-indigo-500/15 px-2.5 py-0.5 rounded-full border border-indigo-500/30">
+              {selectedCount} selected
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-3">
+          {/* Instant Search */}
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Filter issues..."
+              className="pl-8 pr-3 py-1.5 rounded-lg bg-slate-900 border border-slate-600 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-400"
+            />
+          </div>
+
+          {issues.length > 0 && (
+            <>
+              <label className="flex items-center gap-2 text-slate-300 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={issues.length > 0 && issues.every((item) => selectedItems[getItemKey(item)])}
+                  onChange={handleSelectAll}
+                  className="w-4 h-4 rounded text-indigo-500 focus:ring-indigo-400 bg-slate-700 border-slate-600 cursor-pointer"
+                />
+                <span>Select All</span>
+              </label>
+
+              <button
+                onClick={handleIgnoreSelected}
+                disabled={selectedCount === 0 || applying}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 disabled:opacity-40 transition cursor-pointer"
+              >
+                <Ban className="w-3.5 h-3.5" />
+                <span>Ignore Selected ({selectedCount})</span>
+              </button>
+
+              <button
+                onClick={handleApplySelected}
+                disabled={selectedCount === 0 || applying}
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500 hover:bg-emerald-400 text-white shadow-md shadow-emerald-500/20 disabled:opacity-40 transition cursor-pointer"
+              >
+                <Check className="w-3.5 h-3.5" />
+                <span>{applying ? 'Applying...' : `Apply Selected (${selectedCount})`}</span>
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Issues List */}
-      {issues.length === 0 ? (
-        <div className="p-16 text-center rounded-2xl bg-slate-900/40 border border-slate-800">
+      {filteredIssues.length === 0 ? (
+        <div className="p-16 text-center rounded-2xl bg-slate-800/40 border border-slate-700">
           <ShieldCheck className="w-12 h-12 text-emerald-400 mx-auto mb-3" />
-          <h3 className="text-base font-semibold text-slate-300">All File & Package Names Look Great!</h3>
-          <p className="text-xs text-slate-500 mt-1">
-            No spelling mistakes or encoding anomalies found in scope: <strong className="text-indigo-300">{scope}</strong>.
+          <h3 className="text-base font-semibold text-slate-200">
+            {issues.length === 0 ? 'All File & Package Names Look Great!' : 'No items match your filter'}
+          </h3>
+          <p className="text-xs text-slate-400 mt-1">
+            {issues.length === 0
+              ? <>No spelling mistakes or encoding anomalies found in scope: <strong className="text-indigo-300">{scope}</strong>.</>
+              : 'Try adjusting your search query.'}
           </p>
         </div>
       ) : (
         <div className="space-y-3">
-          {issues.map((item) => {
-            const key = `${item.folder}/${item.path}/${item.name}`;
+          {filteredIssues.map((item, idx) => {
+            const key = getItemKey(item);
             const currentSuggested = editedSuggestions[key] || item.name;
+            const isSelected = !!selectedItems[key];
 
             return (
               <div
                 key={key}
-                className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-slate-700 shadow-md transition space-y-3"
+                className={`p-4 rounded-xl border transition space-y-3 ${
+                  isSelected
+                    ? 'bg-indigo-950/30 border-indigo-500/50 shadow-lg shadow-indigo-500/10'
+                    : 'bg-slate-800/60 border-slate-700 hover:border-slate-600 shadow-md'
+                }`}
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                  {/* Item info */}
+                  {/* Checkbox + Item info */}
                   <div className="flex items-start gap-2.5 flex-1 min-w-[280px]">
-                    <div className="p-2 rounded-lg bg-slate-950 border border-slate-800 shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onClick={(e) => handleSelectWithRange(key, idx, e)}
+                      onChange={() => {}}
+                      className="mt-2 w-4 h-4 rounded text-indigo-500 focus:ring-indigo-400 bg-slate-700 border-slate-600 cursor-pointer"
+                    />
+
+                    <div className="p-2 rounded-lg bg-slate-900 border border-slate-700 shrink-0">
                       {item.type === 'package' ? (
                         <Folder className="w-4 h-4 text-amber-400" />
                       ) : (
@@ -274,15 +463,14 @@ export const NameAuditTab: React.FC<NameAuditTabProps> = ({ onOperationDone }) =
                         <span className="text-sm font-bold text-slate-100 truncate" title={item.name}>
                           {item.name}
                         </span>
-                        <span className="text-[10px] uppercase font-bold px-2 py-0.2 rounded bg-slate-800 text-indigo-300">
+                        <span className="text-[10px] uppercase font-bold px-2 py-0.2 rounded bg-slate-700 text-indigo-300">
                           {item.type} &bull; {item.folder}
                         </span>
                       </div>
-                      <p className="text-[11px] text-slate-500 font-mono truncate mt-0.5" title={item.path}>
+                      <p className="text-[11px] text-slate-400 font-mono truncate mt-0.5" title={item.path}>
                         {item.path}
                       </p>
 
-                      {/* Issue badges */}
                       <div className="flex flex-wrap gap-1.5 mt-2">
                         {item.issues.map((iss, iIdx) => (
                           <span
@@ -296,7 +484,7 @@ export const NameAuditTab: React.FC<NameAuditTabProps> = ({ onOperationDone }) =
                     </div>
                   </div>
 
-                  {/* Suggestion / Rename input & Action buttons */}
+                  {/* Suggestion input & Actions */}
                   <div className="flex items-center gap-2 w-full lg:w-auto">
                     <div className="flex-1 lg:w-72">
                       <label className="text-[10px] uppercase font-bold text-slate-400 block mb-1">
@@ -308,7 +496,7 @@ export const NameAuditTab: React.FC<NameAuditTabProps> = ({ onOperationDone }) =
                         onChange={(e) =>
                           setEditedSuggestions((prev) => ({ ...prev, [key]: e.target.value }))
                         }
-                        className="w-full px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs text-emerald-300 font-semibold focus:outline-none focus:border-indigo-500 font-mono"
+                        className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-600 text-xs text-emerald-300 font-semibold focus:outline-none focus:border-indigo-400 font-mono"
                       />
                     </div>
 
@@ -316,7 +504,7 @@ export const NameAuditTab: React.FC<NameAuditTabProps> = ({ onOperationDone }) =
                       <button
                         onClick={() => handleApplySingle(item)}
                         disabled={applying}
-                        className="flex items-center gap-1 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20 transition cursor-pointer"
+                        className="flex items-center gap-1 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500 hover:bg-emerald-400 text-white shadow-md shadow-emerald-500/20 transition cursor-pointer"
                         title="Rename file on disk"
                       >
                         <Check className="w-3.5 h-3.5" />
@@ -325,7 +513,7 @@ export const NameAuditTab: React.FC<NameAuditTabProps> = ({ onOperationDone }) =
 
                       <button
                         onClick={() => handleIgnore(item.name)}
-                        className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-amber-400 border border-slate-700 transition cursor-pointer"
+                        className="p-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-400 hover:text-amber-400 border border-slate-600 transition cursor-pointer"
                         title="Ignore this issue"
                       >
                         <EyeOff className="w-4 h-4" />
@@ -342,8 +530,8 @@ export const NameAuditTab: React.FC<NameAuditTabProps> = ({ onOperationDone }) =
       {/* Ignored Modal */}
       {showIgnoredModal && (
         <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-            <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950">
+          <div className="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-slate-700 flex items-center justify-between bg-slate-900">
               <div className="flex items-center gap-2.5">
                 <EyeOff className="w-5 h-5 text-amber-400" />
                 <h3 className="text-base font-bold text-white">Ignored Spelling & Name Rules</h3>
@@ -355,15 +543,15 @@ export const NameAuditTab: React.FC<NameAuditTabProps> = ({ onOperationDone }) =
 
             <div className="p-6 space-y-3 max-h-96 overflow-y-auto">
               {ignoredList.length === 0 ? (
-                <p className="text-xs text-slate-500 text-center py-6">No names currently ignored.</p>
+                <p className="text-xs text-slate-400 text-center py-6">No names currently ignored.</p>
               ) : (
                 <div className="space-y-2">
                   {ignoredList.map((name) => (
                     <div
                       key={name}
-                      className="p-2.5 rounded-lg bg-slate-800/80 border border-slate-700 flex items-center justify-between text-xs"
+                      className="p-2.5 rounded-lg bg-slate-900/60 border border-slate-700 flex items-center justify-between text-xs"
                     >
-                      <span className="font-medium text-slate-300">{name}</span>
+                      <span className="font-medium text-slate-200">{name}</span>
                       <button
                         onClick={() => handleUnignore(name)}
                         className="text-xs text-rose-400 hover:text-rose-300 hover:underline cursor-pointer"
@@ -376,10 +564,10 @@ export const NameAuditTab: React.FC<NameAuditTabProps> = ({ onOperationDone }) =
               )}
             </div>
 
-            <div className="px-6 py-3.5 bg-slate-950 border-t border-slate-800 flex justify-end">
+            <div className="px-6 py-3.5 bg-slate-900 border-t border-slate-700 flex justify-end">
               <button
                 onClick={() => setShowIgnoredModal(false)}
-                className="px-4 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 cursor-pointer"
+                className="px-4 py-1.5 rounded-lg text-xs font-semibold bg-slate-700 hover:bg-slate-600 text-slate-200 cursor-pointer"
               >
                 Close
               </button>

@@ -52,7 +52,7 @@ def build_remote_catalog(
             "local_available": local_path.exists() if local_path is not None else False,
             "remote_count": len(remote_names),
             "local_count": len(local_names),
-            "to_be_downloaded_count": len(catalog["to_be_downloaded"][section]),
+            "to_be_downloaded_count": len(catalog["to_be_downloaded"].get(section, [])),
         }
 
     return catalog
@@ -145,7 +145,7 @@ def _to_be_downloaded(existing: dict[str, list[str]] | None) -> dict[str, list[s
         section_items = existing.get(section, [])
         sections[section] = [
             item for item in section_items
-            if isinstance(item, str)
+            if isinstance(item, str) and item.strip()
         ]
 
     return sections

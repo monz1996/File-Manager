@@ -7,33 +7,37 @@ import {
   Search, 
   BookmarkCheck, 
   SpellCheck,
+  GitCompare,
+  FileType2,
 } from 'lucide-react';
 import { Header } from './components/Header';
 import { DataFilesModal } from './components/DataFilesModal';
 import { ChangesTab } from './components/Tabs/ChangesTab';
 import { VideoAnalyticsTab } from './components/Tabs/VideoAnalyticsTab';
+import { FileTypesTab } from './components/Tabs/FileTypesTab';
 import { DownloadsSyncTab } from './components/Tabs/DownloadsSyncTab';
 import { DriveSyncTab } from './components/Tabs/DriveSyncTab';
+import { ByteCompareTab } from './components/Tabs/ByteCompareTab';
 import { SearchTab } from './components/Tabs/SearchTab';
 import { RemoteCatalogTab } from './components/Tabs/RemoteCatalogTab';
 import { NameAuditTab } from './components/Tabs/NameAuditTab';
 import type { SystemStatus } from './types';
 
 interface TabItem {
-  id: 'changes' | 'videos' | 'downloads' | 'drive' | 'search' | 'remote_catalog' | 'name_audit';
+  id: 'changes' | 'videos' | 'file_types' | 'downloads' | 'drive' | 'byte_compare' | 'search' | 'remote_catalog' | 'name_audit';
   label: string;
   icon: React.ReactNode;
   badge?: string;
-  badgeColor?: 'emerald' | 'rose' | 'indigo';
+  badgeColor?: 'emerald' | 'rose' | 'indigo' | 'yellow' | 'orange';
 }
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<
-    'changes' | 'videos' | 'downloads' | 'drive' | 'search' | 'remote_catalog' | 'name_audit'
-  >('changes');
+  const [activeTab, setActiveTab] = useState<TabItem['id']>('changes');
   const [status, setStatus] = useState<SystemStatus | null>(null);
   const [loadingStatus, setLoadingStatus] = useState(false);
   const [showDataFilesModal, setShowDataFilesModal] = useState(false);
+  const [driveToast, setDriveToast] = useState<{ type: 'connected' | 'disconnected'; message: string } | null>(null);
+  const prevDriveConnected = React.useRef<boolean | null>(null);
 
   const fetchStatus = async () => {
     setLoadingStatus(true);
@@ -52,6 +56,35 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     fetchStatus();
+  }, []);
+
+  useEffect(() => {
+    const checkDrive = async () => {
+      try {
+        const res = await fetch('/api/status/drive');
+        if (res.ok) {
+          const data = await res.json();
+          const isMounted = data.drive_mounted;
+          if (prevDriveConnected.current !== null && prevDriveConnected.current !== isMounted) {
+            setDriveToast({
+              type: isMounted ? 'connected' : 'disconnected',
+              message: isMounted
+                ? `Hard Drive (${data.drive_letter}) connected and ready!`
+                : `Hard Drive (${data.drive_letter}) was disconnected!`,
+            });
+            setTimeout(() => setDriveToast(null), 5000);
+            fetchStatus();
+          }
+          prevDriveConnected.current = isMounted;
+        }
+      } catch {
+        // Silent fail - polling
+      }
+    };
+
+    checkDrive();
+    const interval = setInterval(checkDrive, 8000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleRescanAll = async () => {
@@ -83,16 +116,27 @@ export const App: React.FC = () => {
       badge: status?.data_files.video_metadata.records_count ? `${status.data_files.video_metadata.records_count} vids` : undefined,
     },
     {
+      id: 'file_types',
+      label: 'File Type Stats',
+      icon: <FileType2 className="w-4 h-4" />,
+      badgeColor: 'yellow',
+    },
+    {
       id: 'downloads',
       label: 'Downloads → Local',
       icon: <Download className="w-4 h-4" />,
     },
     {
       id: 'drive',
-      label: 'Local ↔ Drive (D:)',
+      label: 'Local \u2194 Drive (D:)',
       icon: <HardDrive className="w-4 h-4" />,
       badge: status?.connected.remote_drive.available ? 'Online' : 'Offline',
       badgeColor: status?.connected.remote_drive.available ? 'emerald' : 'rose',
+    },
+    {
+      id: 'byte_compare',
+      label: 'Byte Compare',
+      icon: <GitCompare className="w-4 h-4" />,
     },
     {
       id: 'search',
@@ -104,6 +148,7 @@ export const App: React.FC = () => {
       label: 'Remote Catalog & Queue',
       icon: <BookmarkCheck className="w-4 h-4" />,
       badge: status?.data_files.remote_catalog.to_be_downloaded_count ? `${status.data_files.remote_catalog.to_be_downloaded_count} queued` : undefined,
+      badgeColor: 'orange',
     },
     {
       id: 'name_audit',
@@ -113,8 +158,7 @@ export const App: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-indigo-500 selection:text-white">
-      {/* Header */}
+    <div className="min-h-screen text-white flex flex-col selection:bg-blue-500 selection:text-white">
       <Header
         status={status}
         loading={loadingStatus}
@@ -122,10 +166,8 @@ export const App: React.FC = () => {
         onOpenDataFiles={() => setShowDataFilesModal(true)}
       />
 
-      {/* Main Content Area */}
-      <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 flex flex-col space-y-6">
-        {/* Navigation Tabs Bar */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-2 border-b border-slate-800 scrollbar-none">
+      <div className="w-full max-w-none mx-auto px-3 sm:px-4 lg:px-5 py-5 flex-1 flex flex-col space-y-5">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-2 border-b border-blue-500/30 scrollbar-none">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
             return (
@@ -134,11 +176,11 @@ export const App: React.FC = () => {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer shrink-0 ${
                   isActive
-                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25 border border-indigo-500/50'
-                    : 'bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-slate-800/80'
+                    ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/40 border border-blue-300'
+                    : 'bg-slate-900 hover:bg-slate-800 text-white border border-slate-600'
                 }`}
               >
-                <span className={isActive ? 'text-white' : 'text-slate-400'}>{tab.icon}</span>
+                <span className={isActive ? 'text-yellow-300' : 'text-blue-300'}>{tab.icon}</span>
                 <span>{tab.label}</span>
                 {tab.badge && (
                   <span
@@ -146,10 +188,14 @@ export const App: React.FC = () => {
                       isActive
                         ? 'bg-white/20 text-white'
                         : tab.badgeColor === 'emerald'
-                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/40'
                         : tab.badgeColor === 'rose'
-                        ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-                        : 'bg-indigo-500/10 text-indigo-300 border border-indigo-500/20'
+                        ? 'bg-rose-500/20 text-rose-300 border border-rose-400/40'
+                        : tab.badgeColor === 'yellow'
+                        ? 'bg-yellow-500/20 text-yellow-200 border border-yellow-400/40'
+                        : tab.badgeColor === 'orange'
+                        ? 'bg-orange-500/20 text-orange-200 border border-orange-400/40'
+                        : 'bg-blue-500/20 text-blue-200 border border-blue-400/40'
                     }`}
                   >
                     {tab.badge}
@@ -160,29 +206,42 @@ export const App: React.FC = () => {
           })}
         </div>
 
-        {/* Tab Content Component */}
-        <main className="flex-1">
+        <main className="flex-1 w-full">
           {activeTab === 'changes' && <ChangesTab />}
           {activeTab === 'videos' && <VideoAnalyticsTab />}
+          {activeTab === 'file_types' && <FileTypesTab />}
           {activeTab === 'downloads' && <DownloadsSyncTab onOperationDone={fetchStatus} />}
           {activeTab === 'drive' && <DriveSyncTab status={status} onOperationDone={fetchStatus} />}
+          {activeTab === 'byte_compare' && <ByteCompareTab />}
           {activeTab === 'search' && <SearchTab />}
           {activeTab === 'remote_catalog' && <RemoteCatalogTab />}
           {activeTab === 'name_audit' && <NameAuditTab onOperationDone={fetchStatus} />}
         </main>
       </div>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-800/80 bg-slate-950/80 py-4 px-6 text-center text-xs text-slate-500">
-        <p>File Manager &bull; Loaded 4 Data Registries: <code className="text-slate-400 font-mono">file_index.json</code>, <code className="text-slate-400 font-mono">video_metadata.json</code>, <code className="text-slate-400 font-mono">remote_catalog.json</code>, <code className="text-slate-400 font-mono">old_but_gold_diff.json</code></p>
+      <footer className="border-t border-yellow-400/25 bg-[#1a3a5c]/90 py-4 px-6 text-center text-xs text-blue-100">
+        <p>File Manager &bull; Loaded 4 Data Registries: <code className="text-yellow-300 font-mono">file_index.json</code>, <code className="text-yellow-300 font-mono">video_metadata.json</code>, <code className="text-orange-300 font-mono">remote_catalog.json</code>, <code className="text-blue-300 font-mono">old_but_gold_diff.json</code></p>
       </footer>
 
-      {/* Data Files Modal */}
       <DataFilesModal
         isOpen={showDataFilesModal}
         onClose={() => setShowDataFilesModal(false)}
         status={status}
       />
+
+      {driveToast && (
+        <div className={`fixed bottom-6 right-6 z-50 p-4 rounded-xl border shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 duration-300 ${
+          driveToast.type === 'connected'
+            ? 'bg-emerald-500/20 border-emerald-400/50 text-emerald-200'
+            : 'bg-rose-500/20 border-rose-400/50 text-rose-200'
+        }`}>
+          <HardDrive className="w-5 h-5" />
+          <span className="text-sm font-semibold text-white">{driveToast.message}</span>
+          <button onClick={() => setDriveToast(null)} className="text-yellow-300 hover:text-white ml-2">
+            {'\u2715'}
+          </button>
+        </div>
+      )}
     </div>
   );
 };

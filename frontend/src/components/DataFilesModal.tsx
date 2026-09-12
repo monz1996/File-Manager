@@ -109,11 +109,18 @@ export const DataFilesModal: React.FC<DataFilesModalProps> = ({ isOpen, onClose,
             ))}
           </div>
 
-          <div className="mt-4 p-4 rounded-xl bg-indigo-950/30 border border-indigo-500/20 flex items-center justify-between text-xs text-slate-300">
+          <div className="mt-4 p-4 rounded-xl bg-indigo-950/30 border border-indigo-500/20 flex items-center justify-between text-xs text-slate-200">
             <div>
               <span className="font-semibold text-white">Drive & Local Directory Paths:</span>
-              <p className="text-slate-400 mt-0.5">
+              <p className="text-slate-300 mt-0.5">
                 Local: <code className="text-indigo-300">{status.connected.local_root.path}</code> | Downloads: <code className="text-indigo-300">{status.connected.downloads.path}</code>
+              </p>
+              <p className="text-slate-300 mt-0.5">
+                Drive: {status.connected.remote_drive.available ? (
+                  <code className="text-emerald-300">{status.connected.remote_old_but_gold.path}</code>
+                ) : (
+                  <span className="text-rose-300 font-semibold">Not Connected (D: drive is unplugged)</span>
+                )}
               </p>
             </div>
           </div>

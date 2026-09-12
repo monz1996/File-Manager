@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import struct
 import subprocess
 from datetime import datetime
 from pathlib import Path
@@ -21,6 +22,7 @@ VIDEO_EXTENSIONS = {
 }
 
 MP4_EXTENSIONS = {".m4v", ".mov", ".mp4"}
+MATROSKA_EXTENSIONS = {".mkv", ".webm"}
 
 
 def collect_video_folder_metadata(videos_folder: Path) -> dict:
@@ -108,13 +110,120 @@ def _build_video_entry(path: Path, videos_folder: Path) -> dict:
 
 
 def _get_video_duration_seconds(path: Path) -> float | None:
-    if path.suffix.casefold() not in MP4_EXTENSIONS:
-        return _read_windows_shell_duration_seconds(path)
+    suffix = path.suffix.casefold()
 
-    try:
-        return _read_mp4_duration_seconds(path)
-    except (OSError, ValueError, ZeroDivisionError):
-        return _read_windows_shell_duration_seconds(path)
+    if suffix in MP4_EXTENSIONS:
+        try:
+            duration = _read_mp4_duration_seconds(path)
+            if duration is not None:
+                return duration
+        except (OSError, ValueError, ZeroDivisionError):
+            pass
+    elif suffix in MATROSKA_EXTENSIONS:
+        try:
+            duration = _read_matroska_duration_seconds(path)
+            if duration is not None:
+                return duration
+        except (OSError, ValueError, ZeroDivisionError, struct.error):
+            pass
+
+        # Some downloads are ISO/MP4 containers mislabeled as .webm
+        try:
+            duration = _read_mp4_duration_seconds(path)
+            if duration is not None:
+                return duration
+        except (OSError, ValueError, ZeroDivisionError):
+            pass
+    else:
+        # Unknown video container — try both parsers before shell fallback
+        try:
+            duration = _read_mp4_duration_seconds(path)
+            if duration is not None:
+                return duration
+        except (OSError, ValueError, ZeroDivisionError):
+            pass
+        try:
+            duration = _read_matroska_duration_seconds(path)
+            if duration is not None:
+                return duration
+        except (OSError, ValueError, ZeroDivisionError, struct.error):
+            pass
+
+    return _read_windows_shell_duration_seconds(path)
+
+
+def _read_matroska_duration_seconds(path: Path) -> float | None:
+    """Read Duration from WebM/MKV EBML Info segment."""
+    file_size = path.stat().st_size
+    read_size = min(file_size, 12_000_000)
+
+    with path.open("rb") as file:
+        data = file.read(read_size)
+
+    if len(data) < 8 or data[:4] != b"\x1a\x45\xdf\xa3":
+        return None
+
+    timecode_scale = 1_000_000
+    duration_ticks: float | None = None
+
+    scale_id = b"\x2a\xd7\xb1"
+    duration_id = b"\x44\x89"
+
+    index = 0
+    while True:
+        position = data.find(scale_id, index)
+        if position < 0:
+            break
+        size, content_start = _read_ebml_vint(data, position + len(scale_id))
+        if size is not None and 1 <= size <= 8 and content_start + size <= len(data):
+            timecode_scale = int.from_bytes(data[content_start:content_start + size], "big")
+            break
+        index = position + 1
+
+    index = 0
+    while True:
+        position = data.find(duration_id, index)
+        if position < 0:
+            break
+        size, content_start = _read_ebml_vint(data, position + len(duration_id))
+        if size in (4, 8) and content_start + size <= len(data):
+            chunk = data[content_start:content_start + size]
+            candidate = struct.unpack(">f" if size == 4 else ">d", chunk)[0]
+            # Ignore nonsense floats from coincidental byte matches
+            if candidate > 0 and candidate < 1e12:
+                duration_ticks = candidate
+                break
+        index = position + 1
+
+    if duration_ticks is None or timecode_scale <= 0:
+        return None
+
+    seconds = duration_ticks * timecode_scale / 1_000_000_000
+    if seconds <= 0 or seconds > 100_000_000:
+        return None
+
+    return round(seconds, 3)
+
+
+def _read_ebml_vint(data: bytes, start: int) -> tuple[int | None, int]:
+    if start >= len(data):
+        return None, start
+
+    first = data[start]
+    mask = 0x80
+    length = 1
+    while length <= 8 and not (first & mask):
+        mask >>= 1
+        length += 1
+
+    if length > 8 or start + length > len(data):
+        return None, start
+
+    value = first & (mask - 1)
+    for offset in range(1, length):
+        value = (value << 8) | data[start + offset]
+
+    return value, start + length
 
 
 def _read_mp4_duration_seconds(path: Path) -> float | None:
@@ -279,8 +388,13 @@ def _read_windows_shell_duration_seconds(path: Path) -> float | None:
         "$path = $args[0]; "
         "$shell = New-Object -ComObject Shell.Application; "
         "$folder = $shell.Namespace((Split-Path -LiteralPath $path)); "
+        "if ($null -eq $folder) { return }; "
         "$item = $folder.ParseName((Split-Path -Leaf $path)); "
-        "$folder.GetDetailsOf($item, 27)"
+        "if ($null -eq $item) { return }; "
+        "foreach ($index in 27, 21, 28, 18) { "
+        "  $value = $folder.GetDetailsOf($item, $index); "
+        "  if ($value -and $value -match '\\d') { Write-Output $value; return } "
+        "}"
     )
 
     try:
@@ -291,7 +405,7 @@ def _read_windows_shell_duration_seconds(path: Path) -> float | None:
             encoding="utf-8",
             errors="ignore",
             text=True,
-            timeout=10,
+            timeout=15,
         )
     except (OSError, subprocess.TimeoutExpired):
         return None
@@ -343,14 +457,40 @@ def _read_windows_shell_dimensions(path: Path) -> tuple[int, int] | None:
 
 
 def _parse_duration(duration: str) -> float | None:
-    parts = duration.split(":")
-
-    if len(parts) != 3 or not all(part.isdigit() for part in parts):
+    cleaned = duration.strip().strip("[]").replace(",", ".")
+    if not cleaned:
         return None
 
-    hours, minutes, seconds = (int(part) for part in parts)
+    # Strip any non time characters except digits, colon, and dot
+    filtered = "".join(
+        character for character in cleaned
+        if character.isdigit() or character in {":", "."}
+    )
+    if not filtered:
+        return None
 
-    return float(hours * 3600 + minutes * 60 + seconds)
+    parts = filtered.split(":")
+    if len(parts) == 1:
+        try:
+            value = float(parts[0])
+        except ValueError:
+            return None
+        return value if value > 0 else None
+
+    if len(parts) == 2:
+        parts = ["0", *parts]
+    elif len(parts) != 3:
+        return None
+
+    try:
+        hours = int(parts[0])
+        minutes = int(parts[1])
+        seconds = float(parts[2])
+    except ValueError:
+        return None
+
+    total = hours * 3600 + minutes * 60 + seconds
+    return float(total) if total > 0 else None
 
 
 def _parse_int(value: str) -> int | None:

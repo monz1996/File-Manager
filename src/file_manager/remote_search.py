@@ -45,6 +45,10 @@ def _catalog_search_entries(
             _normalize_name(name)
             for name in catalog.get("to_be_downloaded", {}).get(section_name, [])
         }
+        names_lookup = {
+            _normalize_name(name)
+            for name in catalog.get("names", {}).get(section_name, [])
+        }
 
         if source == "to_be_downloaded":
             names = catalog.get("to_be_downloaded", {}).get(section_name, [])
@@ -57,14 +61,21 @@ def _catalog_search_entries(
             )
 
         for name in names:
-            is_to_be_downloaded = _normalize_name(name) in downloaded_lookup
+            normalized = _normalize_name(name)
+            is_to_be_downloaded = normalized in downloaded_lookup
+            in_names = normalized in names_lookup
+
+            if source in {"names", "to_be_downloaded"}:
+                entry_source = source
+            else:
+                entry_source = "names" if in_names else "to_be_downloaded"
 
             entries.append({
                 "folder": section_name,
                 "path": name,
                 "name": name,
                 "remote_section": section_name,
-                "remote_source": source,
+                "remote_source": entry_source,
                 "is_to_be_downloaded": is_to_be_downloaded,
             })
 
