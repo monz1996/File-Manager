@@ -158,7 +158,7 @@ export const App: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen text-white flex flex-col selection:bg-blue-500 selection:text-white">
+    <div className="min-h-screen bg-white text-white flex flex-col selection:bg-blue-500 selection:text-white">
       <Header
         status={status}
         loading={loadingStatus}
@@ -219,8 +219,8 @@ export const App: React.FC = () => {
         </main>
       </div>
 
-      <footer className="border-t border-yellow-400/25 bg-[#1a3a5c]/90 py-4 px-6 text-center text-xs text-blue-100">
-        <p>File Manager &bull; Loaded 4 Data Registries: <code className="text-yellow-300 font-mono">file_index.json</code>, <code className="text-yellow-300 font-mono">video_metadata.json</code>, <code className="text-orange-300 font-mono">remote_catalog.json</code>, <code className="text-blue-300 font-mono">old_but_gold_diff.json</code></p>
+      <footer className="border-t border-slate-200 bg-white py-4 px-6 text-center text-xs text-slate-600">
+        <p>File Manager &bull; Loaded 4 Data Registries: <code className="text-amber-600 font-mono">file_index.json</code>, <code className="text-amber-600 font-mono">video_metadata.json</code>, <code className="text-orange-600 font-mono">remote_catalog.json</code>, <code className="text-blue-600 font-mono">old_but_gold_diff.json</code></p>
       </footer>
 
       <DataFilesModal

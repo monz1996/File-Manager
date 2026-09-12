@@ -6,19 +6,15 @@
   --fm-blue-bright: #60a5fa;
   --fm-yellow: #facc15;
   --fm-orange: #f97316;
-  --fm-bg: #1e3a5f;
+  --fm-bg: #ffffff;
   --fm-panel: #234b73;
 }
 
 @layer base {
   body {
     @apply text-white font-sans antialiased selection:bg-blue-500 selection:text-white min-h-screen;
-    background-color: #1e4d7b;
-    background-image:
-      radial-gradient(ellipse at top, rgba(96, 165, 250, 0.45), transparent 55%),
-      radial-gradient(ellipse at bottom right, rgba(250, 204, 21, 0.22), transparent 50%),
-      radial-gradient(ellipse at bottom left, rgba(249, 115, 22, 0.18), transparent 45%),
-      linear-gradient(180deg, #2b6cb0 0%, #1e4d7b 45%, #1a3a5c 100%);
+    background-color: #ffffff;
+    background-image: none;
   }
 }
 
@@ -28,7 +24,7 @@
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: rgba(30, 77, 123, 0.5);
+  background: #f1f5f9;
 }
 ::-webkit-scrollbar-thumb {
   background: rgba(250, 204, 21, 0.75);

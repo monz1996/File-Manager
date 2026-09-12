@@ -35,7 +35,7 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="border-b border-yellow-400/30 bg-[#1e4d7b]/90 backdrop-blur sticky top-0 z-30 px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
+    <header className="border-b border-yellow-400/30 bg-white sticky top-0 z-30 px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
       {/* Brand & Title */}
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-500 via-yellow-400 to-orange-500 flex items-center justify-center shadow-lg shadow-blue-500/40">
@@ -43,14 +43,14 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-lg font-bold text-white">
+            <h1 className="text-lg font-bold text-slate-900">
               File Manager
             </h1>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-200 border border-yellow-400/40 font-medium">
+            <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 border border-yellow-300 font-medium">
               v1.0 Pro
             </span>
           </div>
-          <p className="text-xs text-blue-200">
+          <p className="text-xs text-slate-500">
             Intelligent Media Organizer & Synchronization Hub
           </p>
         </div>
