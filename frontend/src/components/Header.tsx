@@ -7,6 +7,7 @@ import {
   CheckCircle2, 
   XCircle,
   RotateCw,
+  LogOut,
 } from 'lucide-react';
 import type { SystemStatus } from '../types';
 
@@ -15,6 +16,8 @@ interface HeaderProps {
   loading: boolean;
   onRefreshAll: () => void;
   onOpenDataFiles: () => void;
+  onEjectDrive: () => Promise<void>;
+  onShutdownApp: () => Promise<void>;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -22,8 +25,12 @@ export const Header: React.FC<HeaderProps> = ({
   loading,
   onRefreshAll,
   onOpenDataFiles,
+  onEjectDrive,
+  onShutdownApp,
 }) => {
   const [rechecking, setRechecking] = React.useState(false);
+  const [ejecting, setEjecting] = React.useState(false);
+  const [shuttingDown, setShuttingDown] = React.useState(false);
 
   const isDriveConnected = status?.connected.remote_drive.available ?? false;
   const isLocalConnected = status?.connected.local_root.available ?? false;
@@ -32,6 +39,28 @@ export const Header: React.FC<HeaderProps> = ({
     setRechecking(true);
     onRefreshAll();
     setTimeout(() => setRechecking(false), 1500);
+  };
+
+  const handleEjectDrive = async () => {
+    if (!isDriveConnected || ejecting) return;
+    if (!window.confirm('Eject the external drive? Close any files using it first.')) return;
+    setEjecting(true);
+    try {
+      await onEjectDrive();
+    } finally {
+      setEjecting(false);
+    }
+  };
+
+  const handleShutdownApp = async () => {
+    if (shuttingDown) return;
+    if (!window.confirm('Shut down File Manager? Make sure all file operations are complete first.')) return;
+    setShuttingDown(true);
+    try {
+      await onShutdownApp();
+    } finally {
+      setShuttingDown(false);
+    }
   };
 
   return (
@@ -53,6 +82,25 @@ export const Header: React.FC<HeaderProps> = ({
           <p className="text-xs text-blue-200">
             Intelligent Media Organizer & Synchronization Hub
           </p>
+        </div>
+        <div className="flex items-center gap-2 ml-3">
+          <button
+            onClick={handleEjectDrive}
+            disabled={!isDriveConnected || ejecting}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium bg-slate-900 hover:bg-slate-800 text-white border border-rose-400/40 transition cursor-pointer disabled:opacity-50"
+            title="Safely eject the external drive"
+          >
+            <LogOut className="w-3.5 h-3.5 text-rose-300" />
+            <span>{ejecting ? 'Ejecting...' : 'Eject Drive'}</span>
+          </button>
+          <button
+            onClick={handleShutdownApp}
+            disabled={shuttingDown}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium bg-rose-900/60 hover:bg-rose-800 text-rose-100 border border-rose-400/40 transition cursor-pointer disabled:opacity-50"
+            title="Stop the File Manager server"
+          >
+            <span>{shuttingDown ? 'Shutting down...' : 'Shutdown App'}</span>
+          </button>
         </div>
       </div>
 

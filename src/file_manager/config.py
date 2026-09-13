@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import string
+import subprocess
 from pathlib import Path
 from typing import Any
 import tomllib
@@ -83,3 +84,40 @@ def check_hard_drive_status() -> dict[str, Any]:
         "old_but_gold_available": old_but_gold_exists,
         "available_drives": available_drives,
     }
+
+
+def eject_hard_drive() -> tuple[bool, str]:
+    """Safely request Windows to eject the configured external drive."""
+    drive_path, _ = load_remote_config()
+    drive_root = f"{drive_path.drive}\\"
+    if not drive_path.drive:
+        return False, "The configured remote path is not on a mounted drive."
+
+    if not os.path.exists(drive_root):
+        return False, f"Drive {drive_path.drive} is already disconnected."
+
+    script = (
+        "$shell = New-Object -ComObject Shell.Application; "
+        "$drive = $shell.Namespace(17).ParseName($args[0]); "
+        "if ($null -eq $drive) { throw 'The configured drive could not be found.' }; "
+        "$drive.InvokeVerb('Eject')"
+    )
+    try:
+        result = subprocess.run(
+            ["powershell", "-NoProfile", "-NonInteractive", "-Command", script, drive_root],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=15,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        return False, "Timed out while requesting drive ejection."
+    except OSError as exc:
+        return False, f"Could not start the Windows eject command: {exc}"
+
+    if result.returncode != 0:
+        error = result.stderr.strip() or result.stdout.strip() or "Windows rejected the eject request."
+        return False, error
+    return True, f"Eject requested for drive {drive_path.drive}."

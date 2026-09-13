@@ -102,6 +102,42 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleEjectDrive = async () => {
+    try {
+      const res = await fetch('/api/status/drive/eject', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) {
+        setDriveToast({ type: 'disconnected', message: data.detail || 'Unable to eject the drive.' });
+        setTimeout(() => setDriveToast(null), 5000);
+        return;
+      }
+      setDriveToast({ type: 'disconnected', message: `${data.message} You can now disconnect it.` });
+      setTimeout(() => setDriveToast(null), 5000);
+      await fetchStatus();
+    } catch {
+      setDriveToast({ type: 'disconnected', message: 'Unable to contact the app to eject the drive.' });
+      setTimeout(() => setDriveToast(null), 5000);
+    }
+  };
+
+  const handleShutdownApp = async () => {
+    try {
+      const res = await fetch('/api/shutdown', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) {
+        setDriveToast({ type: 'disconnected', message: data.detail || 'Unable to shut down the app.' });
+        setTimeout(() => setDriveToast(null), 5000);
+        return;
+      }
+      setDriveToast({ type: 'disconnected', message: `${data.message} You can now eject the drive.` });
+      setTimeout(() => window.close(), 500);
+    } catch {
+      // The server may close the connection immediately after accepting shutdown.
+      setDriveToast({ type: 'disconnected', message: 'File Manager has shut down. You can now eject the drive.' });
+      setTimeout(() => setDriveToast(null), 5000);
+    }
+  };
+
   const tabs: TabItem[] = [
     {
       id: 'changes',
@@ -164,6 +200,8 @@ export const App: React.FC = () => {
         loading={loadingStatus}
         onRefreshAll={handleRescanAll}
         onOpenDataFiles={() => setShowDataFilesModal(true)}
+        onEjectDrive={handleEjectDrive}
+        onShutdownApp={handleShutdownApp}
       />
 
       <div className="w-full max-w-none mx-auto px-3 sm:px-4 lg:px-5 py-5 flex-1 flex flex-col space-y-5">

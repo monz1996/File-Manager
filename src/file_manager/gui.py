@@ -8,6 +8,11 @@ import webbrowser
 
 import uvicorn
 
+try:
+    from .api import app
+except ImportError:
+    from api import app
+
 
 def open_browser(url: str, delay: float = 1.2):
     time.sleep(delay)
@@ -38,7 +43,15 @@ def main(args_list: list[str] | None = None):
     if not args.no_browser:
         threading.Thread(target=open_browser, args=(url,), daemon=True).start()
 
-    uvicorn.run("file_manager.api:app", host=args.host, port=args.port, reload=args.reload)
+    config = uvicorn.Config(
+        app,
+        host=args.host,
+        port=args.port,
+        reload=args.reload,
+    )
+    server = uvicorn.Server(config)
+    app.state.server = server
+    server.run()
 
 
 if __name__ == "__main__":
