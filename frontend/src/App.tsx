@@ -159,21 +159,6 @@ export const App: React.FC = () => {
     }
   };
 
-  const handleEjectDrive = async () => {
-    try {
-      const res = await fetch('/api/status/drive/eject', { method: 'POST' });
-      const data = await res.json();
-      if (!res.ok) {
-        showDriveToast({ type: 'disconnected', message: data.detail || 'Unable to eject the drive.' });
-        return;
-      }
-      showDriveToast({ type: 'disconnected', message: `${data.message} You can now disconnect it.` });
-      await fetchStatus();
-    } catch {
-      showDriveToast({ type: 'disconnected', message: 'Unable to contact the app to eject the drive.' });
-    }
-  };
-
   const handleShutdownApp = async () => {
     try {
       const res = await fetch('/api/shutdown', { method: 'POST' });
@@ -182,14 +167,14 @@ export const App: React.FC = () => {
         showDriveToast({ type: 'disconnected', message: data.detail || 'Unable to shut down the app.' });
         return;
       }
-      setDriveToast({ type: 'disconnected', message: `${data.message} You can now eject the drive.` });
+      setDriveToast({ type: 'disconnected', message: `${data.message} You can now close the window.` });
       shutdownTimeoutRef.current = setTimeout(() => {
         window.close();
         shutdownTimeoutRef.current = null;
       }, 500);
     } catch {
       // The server may close the connection immediately after accepting shutdown.
-      showDriveToast({ type: 'disconnected', message: 'File Manager has shut down. You can now eject the drive.' });
+      showDriveToast({ type: 'disconnected', message: 'File Manager has shut down. You can now close the window.' });
     }
   };
 
@@ -255,7 +240,6 @@ export const App: React.FC = () => {
         loading={loadingStatus}
         onRefreshAll={handleRescanAll}
         onOpenDataFiles={() => setShowDataFilesModal(true)}
-        onEjectDrive={handleEjectDrive}
         onShutdownApp={handleShutdownApp}
       />
 

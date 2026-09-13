@@ -14,7 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 try:
-    from .config import eject_hard_drive, load_config, load_remote_config, load_root_path, check_hard_drive_status
+    from .config import load_config, load_remote_config, load_root_path, check_hard_drive_status
     from .downloads_ignore import add_ignored_name, load_ignored_names, remove_ignored_name, save_ignored_names
     from .downloads_plan import build_downloads_plan, recommend_name_and_package
     from .file_sort import SORT_OPTIONS, sort_files
@@ -51,7 +51,7 @@ try:
     from .search import is_excluded_local_entry, search_file_index
     from .video_metadata import collect_video_folder_metadata
 except ImportError:
-    from config import eject_hard_drive, load_config, load_remote_config, load_root_path, check_hard_drive_status
+    from config import load_config, load_remote_config, load_root_path, check_hard_drive_status
     from downloads_ignore import add_ignored_name, load_ignored_names, remove_ignored_name, save_ignored_names
     from downloads_plan import build_downloads_plan, recommend_name_and_package
     from file_sort import SORT_OPTIONS, sort_files
@@ -198,14 +198,6 @@ def get_system_status():
 def get_drive_status():
     """Lightweight endpoint for polling hard drive connection status."""
     return check_hard_drive_status()
-
-
-@app.post("/api/status/drive/eject")
-def eject_drive():
-    success, message = eject_hard_drive()
-    if not success:
-        raise HTTPException(status_code=409, detail=message)
-    return {"success": True, "message": message}
 
 
 @app.post("/api/shutdown")
@@ -959,6 +951,13 @@ def get_name_audit(scope: str = "all", limit: int | None = None):
     for issue in audit_res["issues"]:
         item_name = issue.get("name", "")
         if not is_audit_ignored(item_name, ignored):
+            suggestions = [
+                issue_detail.get("suggestion")
+                for issue_detail in issue.get("issues", [])
+                if issue_detail.get("suggestion")
+            ]
+            if suggestions:
+                issue["suggested_name"] = suggestions[-1]
             filtered_issues.append(issue)
 
     return {

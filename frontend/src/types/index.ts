@@ -199,6 +199,7 @@ export interface NameAuditEntry {
   folder: string;
   name: string;
   path: string;
+  suggested_name?: string;
   issues: NameAuditIssue[];
 }
 

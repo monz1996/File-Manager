@@ -44,10 +44,8 @@ export const NameAuditTab: React.FC<NameAuditTabProps> = ({ onOperationDone }) =
         const initialEdits: Record<string, string> = {};
         data.issues.forEach((item) => {
           const key = `${item.folder}/${item.path}/${item.name}`;
-          const spellingIssue = item.issues.find((i) => i.kind === 'english_spelling' && i.suggestion);
-          if (spellingIssue && spellingIssue.token && spellingIssue.suggestion) {
-            const fixed = item.name.replace(new RegExp(spellingIssue.token, 'gi'), spellingIssue.suggestion);
-            initialEdits[key] = fixed;
+          if (item.suggested_name) {
+            initialEdits[key] = item.suggested_name;
           } else {
             let cleaned = item.name
               .replace(/ {2,}/g, ' ')
@@ -242,13 +240,40 @@ export const NameAuditTab: React.FC<NameAuditTabProps> = ({ onOperationDone }) =
 
   const issues = auditData?.issues || [];
 
-  // Apply instant search filter
-  const filteredIssues = issues.filter((item) =>
-    !searchQuery ||
-    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.folder.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.path.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const normalizeSearchText = (value: string) =>
+    value.toLowerCase().replace(/[._-]+/g, ' ').replace(/[^\p{L}\p{N}\s]/gu, ' ').trim();
+
+  const fuzzyMatch = (query: string, value: string): number => {
+    const normalizedQuery = normalizeSearchText(query);
+    const normalizedValue = normalizeSearchText(value);
+    if (!normalizedQuery) return 1;
+    if (normalizedValue.includes(normalizedQuery)) return 1;
+
+    const queryTokens = normalizedQuery.split(/\s+/).filter(Boolean);
+    const valueTokens = normalizedValue.split(/\s+/).filter(Boolean);
+    const tokenScores = queryTokens.map((queryToken) =>
+      Math.max(...valueTokens.map((valueToken) => {
+        if (valueToken.includes(queryToken)) return 0.8;
+        let matched = 0;
+        for (const character of valueToken) {
+          if (character === queryToken[matched]) matched += 1;
+          if (matched === queryToken.length) break;
+        }
+        return matched / queryToken.length * 0.7;
+      }), 0)
+    );
+    return tokenScores.reduce((total, score) => total + score, 0) / queryTokens.length;
+  };
+
+  const filteredIssues = issues
+    .map((item, index) => ({
+      item,
+      index,
+      score: fuzzyMatch(searchQuery, `${item.name} ${item.folder} ${item.path}`),
+    }))
+    .filter(({ score }) => !searchQuery || score >= 0.45)
+    .sort((a, b) => searchQuery ? b.score - a.score || a.index - b.index : a.index - b.index)
+    .map(({ item }) => item);
 
   const handleSelectWithRange = (key: string, idx: number, e: React.MouseEvent) => {
     if (e.shiftKey && lastSelectedIdx !== null) {

@@ -43,7 +43,7 @@ def search_file_index(
             for value in (file_entry.get("name", ""), folder, path)
         ):
             continue
-        searchable_text = f"{folder} {path}"
+        searchable_text = f"{file_entry.get('name', '')} {folder} {path}"
         score, matched_by = _score_match(query_normalized, query_tokens, searchable_text)
 
         if score <= 0:

@@ -1,11 +1,133 @@
 {
-    "generated_at": "2026-09-13T13:36:20+03:00",
+    "generated_at": "2026-09-13T14:06:19+03:00",
     "comparison": "case_sensitive_relative_paths",
     "local_root": "C:\\Users\\minas\\Desktop\\old but gold",
     "remote_root": "D:\\old but gold",
     "local_root_available": true,
-    "remote_root_available": false,
-    "package_count": 0,
+    "remote_root_available": true,
+    "package_count": 11,
     "packages_with_differences_count": 0,
-    "packages": []
+    "packages": [
+        {
+            "package": "Anime",
+            "local_available": true,
+            "remote_available": true,
+            "local_count": 25,
+            "remote_count": 25,
+            "only_local_count": 0,
+            "only_remote_count": 0,
+            "only_local": [],
+            "only_remote": []
+        },
+        {
+            "package": "books",
+            "local_available": true,
+            "remote_available": true,
+            "local_count": 2,
+            "remote_count": 2,
+            "only_local_count": 0,
+            "only_remote_count": 0,
+            "only_local": [],
+            "only_remote": []
+        },
+        {
+            "package": "Content",
+            "local_available": true,
+            "remote_available": true,
+            "local_count": 8,
+            "remote_count": 8,
+            "only_local_count": 0,
+            "only_remote_count": 0,
+            "only_local": [],
+            "only_remote": []
+        },
+        {
+            "package": "Lol",
+            "local_available": true,
+            "remote_available": true,
+            "local_count": 258,
+            "remote_count": 258,
+            "only_local_count": 0,
+            "only_remote_count": 0,
+            "only_local": [],
+            "only_remote": []
+        },
+        {
+            "package": "Music",
+            "local_available": true,
+            "remote_available": true,
+            "local_count": 80,
+            "remote_count": 80,
+            "only_local_count": 0,
+            "only_remote_count": 0,
+            "only_local": [],
+            "only_remote": []
+        },
+        {
+            "package": "New folder",
+            "local_available": true,
+            "remote_available": true,
+            "local_count": 579,
+            "remote_count": 579,
+            "only_local_count": 0,
+            "only_remote_count": 0,
+            "only_local": [],
+            "only_remote": []
+        },
+        {
+            "package": "Old Music",
+            "local_available": true,
+            "remote_available": true,
+            "local_count": 188,
+            "remote_count": 188,
+            "only_local_count": 0,
+            "only_remote_count": 0,
+            "only_local": [],
+            "only_remote": []
+        },
+        {
+            "package": "pictures",
+            "local_available": true,
+            "remote_available": true,
+            "local_count": 51,
+            "remote_count": 51,
+            "only_local_count": 0,
+            "only_remote_count": 0,
+            "only_local": [],
+            "only_remote": []
+        },
+        {
+            "package": "Recordings",
+            "local_available": true,
+            "remote_available": true,
+            "local_count": 19,
+            "remote_count": 19,
+            "only_local_count": 0,
+            "only_remote_count": 0,
+            "only_local": [],
+            "only_remote": []
+        },
+        {
+            "package": "Songs",
+            "local_available": true,
+            "remote_available": true,
+            "local_count": 377,
+            "remote_count": 377,
+            "only_local_count": 0,
+            "only_remote_count": 0,
+            "only_local": [],
+            "only_remote": []
+        },
+        {
+            "package": "videos",
+            "local_available": true,
+            "remote_available": true,
+            "local_count": 671,
+            "remote_count": 671,
+            "only_local_count": 0,
+            "only_remote_count": 0,
+            "only_local": [],
+            "only_remote": []
+        }
+    ]
 }

@@ -400,7 +400,7 @@ export const ChangesTab: React.FC = () => {
             const isReverting = revertingId === op.id;
             const items = getOperationItems(op);
             const allDeletions = items.every(item => item.action.startsWith('Deleted'));
-            const hasRevertableItems = items.some(item => !item.action.startsWith('Deleted'));
+            const hasRevertableItems = items.some(item => isRevertableAction(item.action));
 
             return (
               <div
@@ -569,7 +569,6 @@ export const ChangesTab: React.FC = () => {
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 mb-1">
                                       <File className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
-                                      <span className="text-sm font-medium text-white truncate">{getFileName(item.source)}</span>
                                       <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${getChangeColor(item.action)} bg-slate-700/50`}>
                                         {item.action}
                                       </span>
@@ -577,17 +576,17 @@ export const ChangesTab: React.FC = () => {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
                                       <div className="bg-slate-900/50 rounded p-2">
                                         <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide block mb-1">From</span>
-                                        <code className="text-slate-300 break-all font-mono text-[11px]">{item.source}</code>
-                                        {getDirectoryPath(item.source) && (
-                                          <div className="text-[10px] text-slate-500 mt-1 font-mono">{getDirectoryPath(item.source)}</div>
-                                        )}
+                                        <span className="text-sm font-medium text-white break-all">{getFileName(item.source)}</span>
+                                        <code className="block mt-0.5 text-slate-300 break-all font-mono text-[11px]">
+                                          {getDirectoryPath(item.source) || item.source}
+                                        </code>
                                       </div>
                                       <div className="bg-slate-900/50 rounded p-2">
                                         <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide block mb-1">To</span>
-                                        <code className="text-indigo-300 break-all font-mono text-[11px]">{item.destination}</code>
-                                        {getDirectoryPath(item.destination) && (
-                                          <div className="text-[10px] text-slate-500 mt-1 font-mono">{getDirectoryPath(item.destination)}</div>
-                                        )}
+                                        <span className="text-sm font-medium text-white break-all">{getFileName(item.destination)}</span>
+                                        <code className="block mt-0.5 text-indigo-300 break-all font-mono text-[11px]">
+                                          {getDirectoryPath(item.destination) || item.destination}
+                                        </code>
                                       </div>
                                     </div>
                                   </div>

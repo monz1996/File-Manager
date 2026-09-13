@@ -4,6 +4,11 @@ import re
 from pathlib import PurePosixPath
 from typing import Any
 
+try:
+    from .downloads_plan import clean_download_name
+except ImportError:
+    from downloads_plan import clean_download_name
+
 
 ARABIC_PATTERN = re.compile(r"[\u0600-\u06ff]")
 LATIN_TOKEN_PATTERN = re.compile(r"[A-Za-z][A-Za-z']*")
@@ -171,8 +176,24 @@ def _audit_name(name: str) -> list[dict[str, str]]:
 
     issues.extend(_audit_formatting(stem))
     issues.extend(_audit_latin_spelling(stem))
+    suggested_name = _apply_name_standards(name)
+    was_changed = suggested_name != name
+    if was_changed:
+        issues.append({
+            "kind": "download_naming",
+            "suggestion": suggested_name,
+            "message": "Name does not follow the Downloads to Local naming standard.",
+        })
 
     return issues
+
+
+def _apply_name_standards(name: str) -> str:
+    corrected = name
+    for misspelling, correction in COMMON_MISSPELLINGS.items():
+        corrected = re.sub(re.escape(misspelling), correction, corrected, flags=re.IGNORECASE)
+    cleaned_name, _ = clean_download_name(corrected)
+    return cleaned_name
 
 
 def _audit_formatting(name: str) -> list[dict[str, str]]:

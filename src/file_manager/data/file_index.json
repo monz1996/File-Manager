@@ -255,14 +255,14 @@
         },
         {
             "folder": "books",
-            "name": "test.txt",
-            "path": "test.txt",
+            "name": "dww.txt",
+            "path": "dww.txt",
             "extension": ".txt",
-            "size_bytes": 0,
-            "created_at": "2026-09-13T12:12:59+03:00",
-            "created_timestamp": 1789290779.0706787,
-            "modified_at": "2026-09-13T12:12:59+03:00",
-            "modified_timestamp": 1789290779.0706787
+            "size_bytes": 10,
+            "created_at": "2026-09-13T13:16:41+03:00",
+            "created_timestamp": 1789294601.1574745,
+            "modified_at": "2026-09-13T13:23:47+03:00",
+            "modified_timestamp": 1789295027.6587212
         },
         {
             "folder": "books",
@@ -283,8 +283,8 @@
             "size_bytes": 1709,
             "created_at": "2026-09-13T01:39:31+03:00",
             "created_timestamp": 1789252771.9246273,
-            "modified_at": "2026-09-13T11:20:44+03:00",
-            "modified_timestamp": 1789287644.3256092
+            "modified_at": "2026-09-13T13:28:55+03:00",
+            "modified_timestamp": 1789295335.0315125
         },
         {
             "folder": "content",
@@ -305,8 +305,8 @@
             "size_bytes": 1289,
             "created_at": "2026-09-13T01:39:31+03:00",
             "created_timestamp": 1789252771.9246273,
-            "modified_at": "2026-09-13T11:20:44+03:00",
-            "modified_timestamp": 1789287644.3256092
+            "modified_at": "2026-09-13T13:28:55+03:00",
+            "modified_timestamp": 1789295335.0315125
         },
         {
             "folder": "content",
@@ -324,11 +324,11 @@
             "name": "Movies.json",
             "path": "Movies.json",
             "extension": ".json",
-            "size_bytes": 22060,
+            "size_bytes": 22480,
             "created_at": "2026-09-13T01:39:31+03:00",
             "created_timestamp": 1789252771.9246273,
-            "modified_at": "2026-09-13T11:20:44+03:00",
-            "modified_timestamp": 1789287644.3256092
+            "modified_at": "2026-09-13T13:28:55+03:00",
+            "modified_timestamp": 1789295335.0315125
         },
         {
             "folder": "content",
@@ -346,11 +346,11 @@
             "name": "Series.json",
             "path": "Series.json",
             "extension": ".json",
-            "size_bytes": 1357,
+            "size_bytes": 1493,
             "created_at": "2026-09-13T01:39:31+03:00",
             "created_timestamp": 1789252771.9246273,
-            "modified_at": "2026-09-13T11:20:44+03:00",
-            "modified_timestamp": 1789287644.3256092
+            "modified_at": "2026-09-13T13:28:55+03:00",
+            "modified_timestamp": 1789295335.0315125
         },
         {
             "folder": "content",

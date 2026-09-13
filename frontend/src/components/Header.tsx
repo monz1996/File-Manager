@@ -6,8 +6,6 @@ import {
   Database, 
   CheckCircle2, 
   XCircle,
-  RotateCw,
-  LogOut,
 } from 'lucide-react';
 import type { SystemStatus } from '../types';
 
@@ -16,7 +14,6 @@ interface HeaderProps {
   loading: boolean;
   onRefreshAll: () => void;
   onOpenDataFiles: () => void;
-  onEjectDrive: () => Promise<void>;
   onShutdownApp: () => Promise<void>;
 }
 
@@ -25,45 +22,12 @@ export const Header: React.FC<HeaderProps> = ({
   loading,
   onRefreshAll,
   onOpenDataFiles,
-  onEjectDrive,
   onShutdownApp,
 }) => {
-  const [rechecking, setRechecking] = React.useState(false);
-  const [ejecting, setEjecting] = React.useState(false);
   const [shuttingDown, setShuttingDown] = React.useState(false);
-  const recheckTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  React.useEffect(() => () => {
-    if (recheckTimeoutRef.current) {
-      clearTimeout(recheckTimeoutRef.current);
-    }
-  }, []);
 
   const isDriveConnected = status?.connected.remote_drive.available ?? false;
   const isLocalConnected = status?.connected.local_root.available ?? false;
-
-  const handleRecheckDrive = async () => {
-    setRechecking(true);
-    onRefreshAll();
-    if (recheckTimeoutRef.current) {
-      clearTimeout(recheckTimeoutRef.current);
-    }
-    recheckTimeoutRef.current = setTimeout(() => {
-      setRechecking(false);
-      recheckTimeoutRef.current = null;
-    }, 1500);
-  };
-
-  const handleEjectDrive = async () => {
-    if (!isDriveConnected || ejecting) return;
-    if (!window.confirm('Eject the external drive? Close any files using it first.')) return;
-    setEjecting(true);
-    try {
-      await onEjectDrive();
-    } finally {
-      setEjecting(false);
-    }
-  };
 
   const handleShutdownApp = async () => {
     if (shuttingDown) return;
@@ -98,15 +62,6 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
         <div className="flex items-center gap-2 ml-3">
           <button
-            onClick={handleEjectDrive}
-            disabled={!isDriveConnected || ejecting}
-            className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium bg-slate-900 hover:bg-slate-800 text-white border border-rose-400/40 transition cursor-pointer disabled:opacity-50"
-            title="Safely eject the external drive"
-          >
-            <LogOut className="w-3.5 h-3.5 text-rose-300" />
-            <span>{ejecting ? 'Ejecting...' : 'Eject Drive'}</span>
-          </button>
-          <button
             onClick={handleShutdownApp}
             disabled={shuttingDown}
             className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium bg-rose-900/60 hover:bg-rose-800 text-rose-100 border border-rose-400/40 transition cursor-pointer disabled:opacity-50"
@@ -137,17 +92,6 @@ export const Header: React.FC<HeaderProps> = ({
             </span>
           )}
         </div>
-
-        {/* Recheck Drive Button */}
-        <button
-          onClick={handleRecheckDrive}
-          disabled={rechecking}
-          className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium bg-slate-900 hover:bg-slate-800 text-white border border-blue-500/40 transition cursor-pointer disabled:opacity-50"
-          title="Recheck if the hard drive is connected"
-        >
-          <RotateCw className={`w-3.5 h-3.5 ${rechecking ? 'animate-spin' : ''} text-yellow-300`} />
-          <span>{rechecking ? 'Checking...' : 'Recheck Drive'}</span>
-        </button>
 
         {/* Local Folder Badge */}
         <div className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium border ${

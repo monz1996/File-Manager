@@ -109,6 +109,8 @@ def revert_operation(op_id: str, log_file: Path = OPERATIONS_LOG_FILE) -> tuple[
 
         elif action_type == "drive_sync":
             copied = details.get("copied", [])
+            if not isinstance(copied, list) or not copied:
+                return False, "Deleted files are permanently removed and cannot be reverted."
             remote_root = Path(dest_str)
             for rel in copied:
                 rem_file = remote_root / rel
