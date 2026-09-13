@@ -142,6 +142,7 @@ export const DownloadsSyncTab: React.FC<{ onOperationDone?: () => void }> = ({ o
       .filter((e) => selectedEntries[e.source_path])
       .map((e) => e.source_name);
     if (selectedNames.length === 0) return;
+    if (!window.confirm(`Ignore ${selectedNames.length} selected item(s) from Downloads?`)) return;
     try {
       const res = await fetch('/api/downloads/ignore-batch', {
         method: 'POST',
@@ -163,6 +164,7 @@ export const DownloadsSyncTab: React.FC<{ onOperationDone?: () => void }> = ({ o
   const handleIgnoreAll = async () => {
     if (!plan || plan.entries.length === 0) return;
     const allNames = plan.entries.map((e) => e.source_name);
+    if (!window.confirm(`Ignore all ${allNames.length} item(s) currently shown in Downloads?`)) return;
     try {
       const res = await fetch('/api/downloads/ignore-batch', {
         method: 'POST',
@@ -303,8 +305,12 @@ export const DownloadsSyncTab: React.FC<{ onOperationDone?: () => void }> = ({ o
     }));
   };
 
-  const handleMoveFiles = async (itemsToMove: DownloadPlanEntry[]) => {
+  const handleMoveFiles = async (itemsToMove: DownloadPlanEntry[], requireConfirmation = false) => {
     if (itemsToMove.length === 0) return;
+    if (requireConfirmation) {
+      const action = itemsToMove.length === 1 ? 'Move the selected item' : `Move ${itemsToMove.length} selected item(s)`;
+      if (!window.confirm(`${action} from Downloads to Local Old But Gold?`)) return;
+    }
     setMoving(true);
     setFeedback(null);
 
@@ -507,7 +513,7 @@ export const DownloadsSyncTab: React.FC<{ onOperationDone?: () => void }> = ({ o
             <button
               onClick={() => {
                 const itemsToMove = plan.entries.filter((e) => selectedEntries[e.source_path]);
-                handleMoveFiles(itemsToMove);
+                handleMoveFiles(itemsToMove, true);
               }}
               disabled={selectedCount === 0 || moving}
               className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold bg-indigo-500 hover:bg-indigo-400 text-white shadow-md shadow-indigo-500/20 disabled:opacity-40 transition cursor-pointer"
@@ -517,7 +523,7 @@ export const DownloadsSyncTab: React.FC<{ onOperationDone?: () => void }> = ({ o
             </button>
 
             <button
-              onClick={() => handleMoveFiles(plan.entries)}
+              onClick={() => handleMoveFiles(plan.entries, true)}
               disabled={moving || plan.entries.length === 0}
               className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 disabled:opacity-40 transition cursor-pointer"
             >

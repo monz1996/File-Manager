@@ -10,7 +10,14 @@ import {
   HardDrive,
   Download,
   Check,
-  X
+  X,
+  Eye,
+  Trash2,
+  File,
+  Plus,
+  Minus,
+  ArrowRight,
+  GitCompare,
 } from 'lucide-react';
 import type { OperationLog } from '../../types';
 
@@ -20,6 +27,10 @@ export const ChangesTab: React.FC = () => {
   const [revertingId, setRevertingId] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<string>('all');
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [inspectedOperation, setInspectedOperation] = useState<OperationLog | null>(null);
+  const [selectedItemIndices, setSelectedItemIndices] = useState<Record<number, boolean>>({});
+  const [selectedOperationIds, setSelectedOperationIds] = useState<Record<string, boolean>>({});
+  const [operationItems, setOperationItems] = useState<Array<{ source: string; destination: string; action: string }>>([]);
 
   const fetchHistory = async () => {
     setLoading(true);
@@ -36,12 +47,169 @@ export const ChangesTab: React.FC = () => {
     }
   };
 
+  const getOperationItems = (op: OperationLog): Array<{
+    source: string;
+    destination: string;
+    action: string;
+  }> => {
+    const items = op.details?.items;
+    if (Array.isArray(items) && items.length > 0) {
+      return items.map((item) => ({
+        source: item.source,
+        destination: item.destination,
+        action: 'Moved',
+      }));
+    }
+
+    const result: Array<{ source: string; destination: string; action: string }> = [];
+    const addPaths = (paths: unknown, action: string, sourceRoot = op.source, destinationRoot = op.destination) => {
+      if (!Array.isArray(paths)) return;
+      paths.forEach((relativePath) => {
+        if (typeof relativePath !== 'string') return;
+        result.push({
+          source: `${sourceRoot}\\${relativePath}`,
+          destination: `${destinationRoot}\\${relativePath}`,
+          action,
+        });
+      });
+    };
+
+    const packages = op.details?.packages;
+    if (Array.isArray(packages)) {
+      packages.forEach((pkg) => {
+        if (!pkg || typeof pkg.package !== 'string') return;
+        addPaths(pkg.copied, 'Copied', `${op.source}\\${pkg.package}`, `${op.destination}\\${pkg.package}`);
+        addPaths(pkg.updated, 'Updated', `${op.source}\\${pkg.package}`, `${op.destination}\\${pkg.package}`);
+        addPaths(pkg.deleted, 'Deleted from remote', `${op.source}\\${pkg.package}`, `${op.destination}\\${pkg.package}`);
+      });
+    } else {
+      addPaths(op.details?.copied, 'Copied');
+      addPaths(op.details?.updated, 'Updated');
+      addPaths(op.details?.deleted, 'Deleted from remote');
+    }
+
+    return result.length > 0
+      ? result
+      : [{ source: op.source, destination: op.destination, action: op.action_type === 'download_move' ? 'Moved' : 'Changed' }];
+  };
+
+  const getFileName = (path: string): string => {
+    const parts = path.split(/[/\\]/);
+    return parts[parts.length - 1] || path;
+  };
+
+  const getDirectoryPath = (path: string): string => {
+    const parts = path.split(/[/\\]/);
+    return parts.slice(0, -1).join('\\') || '';
+  };
+
+  const getChangeIcon = (action: string) => {
+    if (action.startsWith('Deleted')) return <Minus className="w-4 h-4 text-rose-400" />;
+    if (action === 'Updated') return <GitCompare className="w-4 h-4 text-amber-400" />;
+    if (action === 'Copied') return <Plus className="w-4 h-4 text-emerald-400" />;
+    return <ArrowRight className="w-4 h-4 text-blue-400" />;
+  };
+
+  const getChangeColor = (action: string): string => {
+    if (action.startsWith('Deleted')) return 'text-rose-300';
+    if (action === 'Updated') return 'text-amber-300';
+    if (action === 'Copied') return 'text-emerald-300';
+    return 'text-blue-300';
+  };
+
+  const isRevertableAction = (action: string): boolean => action === 'Copied' || action === 'Moved';
+
+  const handlePartialRevert = async () => {
+    if (!inspectedOperation) return;
+    
+    const selectedIndices = Object.keys(selectedItemIndices)
+      .filter((index) => selectedItemIndices[Number(index)])
+      .map(Number);
+    
+    // Only files copied to the drive can be reverted safely. Deleted and updated
+    // remote files do not have enough history in the activity log to restore.
+    const revertableIndices = selectedIndices.filter(index => isRevertableAction(operationItems[index].action));
+    
+    if (revertableIndices.length === 0) {
+      setFeedback({ type: 'error', message: 'Please select at least one copy/update operation to revert. Deletions cannot be reverted.' });
+      return;
+    }
+    
+    if (!window.confirm(`Revert ${revertableIndices.length} selected file(s) from this activity event?`)) return;
+
+    try {
+      const res = await fetch(`/api/history/revert/${inspectedOperation.id}/items`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ indices: revertableIndices }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setFeedback({ type: 'error', message: data.detail || 'Failed to partially revert operation.' });
+        return;
+      }
+      setFeedback({ type: 'success', message: data.message || 'Selected files reverted.' });
+      setOperations(data.operations || []);
+      setInspectedOperation(null);
+      setSelectedItemIndices({});
+      setOperationItems([]);
+    } catch (err) {
+      setFeedback({ type: 'error', message: 'Network error while partially reverting.' });
+    }
+  };
+
+  const handleDeleteOperations = async (ids: string[], description: string) => {
+    if (ids.length === 0) return;
+    if (!window.confirm(`Delete ${description}? This removes the activity from the log and it cannot be reverted from the app.`)) return;
+
+    try {
+      const res = await fetch('/api/history/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setFeedback({ type: 'error', message: data.detail || 'Failed to delete activities.' });
+        return;
+      }
+      setOperations(data.operations || []);
+      setSelectedOperationIds({});
+      setFeedback({ type: 'success', message: `Deleted ${data.deleted_count} activity event(s).` });
+    } catch (err) {
+      setFeedback({ type: 'error', message: 'Network error while deleting activities.' });
+    }
+  };
+
   useEffect(() => {
     fetchHistory();
   }, []);
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setInspectedOperation(null);
+        setOperationItems([]);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   const handleRevert = async (opId: string) => {
-    if (!window.confirm('Are you sure you want to revert this operation? The file will be restored to its original location/name.')) {
+    const operation = operations.find(op => op.id === opId);
+    if (!operation) return;
+    
+    // Check if all items are deletions
+    const items = getOperationItems(operation);
+    const allDeletions = items.every(item => item.action.startsWith('Deleted'));
+    
+    if (allDeletions) {
+      setFeedback({ type: 'error', message: 'Cannot revert operation - all files were deletions which are not revertable.' });
+      return;
+    }
+    
+    if (!window.confirm('Are you sure you want to revert this operation? Only copy/update operations will be reverted (deletions cannot be reverted).')) {
       return;
     }
     setRevertingId(opId);
@@ -193,9 +361,46 @@ export const ChangesTab: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-3">
+          <div className="p-3 rounded-xl bg-slate-800 border border-slate-700 flex flex-wrap items-center justify-between gap-3">
+            <label className="flex items-center gap-2 text-xs text-slate-200 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={filteredOps.length > 0 && filteredOps.every((op) => selectedOperationIds[op.id])}
+                onChange={(event) => {
+                  const updated = { ...selectedOperationIds };
+                  filteredOps.forEach((op) => { updated[op.id] = event.target.checked; });
+                  setSelectedOperationIds(updated);
+                }}
+                className="w-4 h-4 rounded text-indigo-500 bg-slate-700 border-slate-600"
+              />
+              Select visible activities
+            </label>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleDeleteOperations(
+                  Object.keys(selectedOperationIds).filter((id) => selectedOperationIds[id]),
+                  'the selected activity events',
+                )}
+                disabled={!Object.values(selectedOperationIds).some(Boolean)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 disabled:opacity-40 cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Delete Selected
+              </button>
+              <button
+                onClick={() => handleDeleteOperations(operations.map((op) => op.id), 'all activity events')}
+                disabled={operations.length === 0}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 disabled:opacity-40 cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Delete All
+              </button>
+            </div>
+          </div>
           {filteredOps.map((op) => {
             const isReverted = op.status === 'reverted';
             const isReverting = revertingId === op.id;
+            const items = getOperationItems(op);
+            const allDeletions = items.every(item => item.action.startsWith('Deleted'));
+            const hasRevertableItems = items.some(item => !item.action.startsWith('Deleted'));
 
             return (
               <div
@@ -208,6 +413,12 @@ export const ChangesTab: React.FC = () => {
               >
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={!!selectedOperationIds[op.id]}
+                      onChange={(event) => setSelectedOperationIds((prev) => ({ ...prev, [op.id]: event.target.checked }))}
+                      className="w-4 h-4 rounded text-indigo-500 bg-slate-700 border-slate-600"
+                    />
                     {getActionBadge(op.action_type)}
                     <div className="flex items-center gap-1.5 text-xs text-slate-400">
                       <Clock className="w-3.5 h-3.5" />
@@ -217,6 +428,24 @@ export const ChangesTab: React.FC = () => {
 
                   {/* Status & Revert Action */}
                   <div className="flex items-center gap-2.5">
+                    <button
+                      onClick={() => {
+                        setInspectedOperation(op);
+                        setSelectedItemIndices({});
+                        setOperationItems(getOperationItems(op));
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition cursor-pointer"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>Inspect</span>
+                    </button>
+                    <button
+                      onClick={() => handleDeleteOperations([op.id], 'this activity event')}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 transition cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Delete</span>
+                    </button>
                     {isReverted ? (
                       <span className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-slate-700 text-slate-300 border border-slate-600 font-medium">
                         <Check className="w-3.5 h-3.5 text-slate-500" /> Reverted {op.reverted_at ? `(${new Date(op.reverted_at).toLocaleTimeString()})` : ''}
@@ -224,11 +453,12 @@ export const ChangesTab: React.FC = () => {
                     ) : (
                       <button
                         onClick={() => handleRevert(op.id)}
-                        disabled={isReverting}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 transition cursor-pointer disabled:opacity-50"
+                        disabled={isReverting || !hasRevertableItems}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        title={allDeletions ? 'Cannot revert - all files were deletions' : 'Revert copy/update operations'}
                       >
                         <RotateCcw className={`w-3.5 h-3.5 ${isReverting ? 'animate-spin' : ''}`} />
-                        <span>{isReverting ? 'Reverting...' : 'Revert Change'}</span>
+                        <span>{isReverting ? 'Reverting...' : allDeletions ? 'Not Revertable' : 'Revert Change'}</span>
                       </button>
                     )}
                   </div>
@@ -267,6 +497,219 @@ export const ChangesTab: React.FC = () => {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {inspectedOperation && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+            <div className="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-bold text-white">Activity Event Details</h3>
+                <p className="text-xs text-slate-400">
+                  {inspectedOperation.description} · Status: {inspectedOperation.status}
+                </p>
+              </div>
+              <button onClick={() => {
+                setInspectedOperation(null);
+                setOperationItems([]);
+              }} className="text-slate-400 hover:text-white cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto">
+              <div className="px-6 py-4 border-b border-slate-700/50 bg-slate-800/30">
+                <div className="grid grid-cols-2 gap-4 text-xs">
+                  <div>
+                    <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Source</span>
+                    <code className="block mt-1 text-slate-200 break-all font-mono">{inspectedOperation.source}</code>
+                  </div>
+                  <div>
+                    <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Destination</span>
+                    <code className="block mt-1 text-indigo-300 break-all font-mono">{inspectedOperation.destination}</code>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4">
+                {(() => {
+                  const items = operationItems;
+                  const deletions = items.filter(item => item.action.startsWith('Deleted'));
+                  const copyOperations = items.filter(item => isRevertableAction(item.action));
+                  const otherChanges = items.filter(item => item.action === 'Updated');
+                  
+                  return (
+                    <>
+                      {copyOperations.length > 0 && (
+                        <div className="mb-6">
+                          <div className="flex items-center justify-between mb-3">
+                            <h4 className="text-sm font-semibold text-white">Copy Operations (Selectable for Revert)</h4>
+                            <span className="text-xs text-slate-400">{copyOperations.length} files</span>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            {copyOperations.map((item) => {
+                              const originalIndex = items.indexOf(item);
+                              return (
+                              <label 
+                                key={`change-${originalIndex}`} 
+                                className="flex items-start gap-3 p-3 rounded-lg bg-slate-800 border border-slate-700 hover:border-slate-600 cursor-pointer transition"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={selectedItemIndices[originalIndex] || false}
+                                  onChange={(event) => setSelectedItemIndices((prev) => ({ ...prev, [originalIndex]: event.target.checked }))}
+                                  className="mt-1 w-4 h-4 rounded text-indigo-500 bg-slate-700 border-slate-600"
+                                />
+                                <div className="flex items-start gap-3 flex-1 min-w-0">
+                                  <div className="flex-shrink-0 mt-0.5">
+                                    {getChangeIcon(item.action)}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <File className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                                      <span className="text-sm font-medium text-white truncate">{getFileName(item.source)}</span>
+                                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${getChangeColor(item.action)} bg-slate-700/50`}>
+                                        {item.action}
+                                      </span>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                                      <div className="bg-slate-900/50 rounded p-2">
+                                        <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide block mb-1">From</span>
+                                        <code className="text-slate-300 break-all font-mono text-[11px]">{item.source}</code>
+                                        {getDirectoryPath(item.source) && (
+                                          <div className="text-[10px] text-slate-500 mt-1 font-mono">{getDirectoryPath(item.source)}</div>
+                                        )}
+                                      </div>
+                                      <div className="bg-slate-900/50 rounded p-2">
+                                        <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide block mb-1">To</span>
+                                        <code className="text-indigo-300 break-all font-mono text-[11px]">{item.destination}</code>
+                                        {getDirectoryPath(item.destination) && (
+                                          <div className="text-[10px] text-slate-500 mt-1 font-mono">{getDirectoryPath(item.destination)}</div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {otherChanges.length > 0 && (
+                        <div className="mb-6">
+                          <div className="flex items-center justify-between mb-3">
+                            <h4 className="text-sm font-semibold text-white">Updated Operations (View Only)</h4>
+                            <span className="text-xs text-slate-400">{otherChanges.length} files</span>
+                          </div>
+                          <div className="space-y-2">
+                            {otherChanges.map((item) => (
+                              <div key={`updated-${item.destination}`} className="flex items-start gap-3 p-3 rounded-lg bg-slate-800/50 border border-slate-700/50 opacity-75">
+                                <GitCompare className="w-4 h-4 text-amber-400 mt-0.5" />
+                                <div className="min-w-0">
+                                  <div className="text-sm font-medium text-slate-300">{getFileName(item.destination)}</div>
+                                  <code className="text-[11px] text-indigo-300 break-all font-mono">{item.destination}</code>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {deletions.length > 0 && (
+                        <div>
+                          <div className="flex items-center justify-between mb-3">
+                            <h4 className="text-sm font-semibold text-white">Delete Operations (View Only - Not Revertable)</h4>
+                            <span className="text-xs text-slate-400">{deletions.length} files</span>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            {deletions.map((item) => {
+                              const originalIndex = items.indexOf(item);
+                              return (
+                              <div 
+                                key={`deleted-${item.destination}-${originalIndex}`} 
+                                className="flex items-start gap-3 p-3 rounded-lg bg-slate-800/50 border border-slate-700/50 opacity-75"
+                              >
+                                <div className="flex items-start gap-3 flex-1 min-w-0">
+                                  <div className="flex-shrink-0 mt-0.5">
+                                    {getChangeIcon(item.action)}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <File className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                                      <span className="text-sm font-medium text-slate-300 truncate">{getFileName(item.destination)}</span>
+                                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full text-rose-300 bg-rose-500/10 border border-rose-500/20">
+                                        {item.action}
+                                      </span>
+                                      <span className="text-[10px] text-slate-500 italic">View only</span>
+                                    </div>
+                                    <div className="bg-slate-900/50 rounded p-2 text-xs">
+                                      <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide block mb-1">Deleted from Drive</span>
+                                      <code className="text-indigo-300 break-all font-mono text-[11px]">{item.destination}</code>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {items.length === 0 && (
+                        <div className="text-center py-8 text-slate-400 text-sm">
+                          No file changes found for this operation
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
+            </div>
+
+            <div className="px-6 py-3.5 bg-slate-950 border-t border-slate-700 flex items-center justify-between">
+              <span className="text-[11px] text-slate-400">Press Esc to close</span>
+              <div className="flex items-center gap-2">
+                {(() => {
+                  const selectedIndices = Object.keys(selectedItemIndices)
+                    .filter((index) => selectedItemIndices[Number(index)])
+                    .map(Number);
+                  const revertableCount = selectedIndices.filter(index => isRevertableAction(operationItems[index].action)).length;
+                  const deletionCount = selectedIndices.filter(index => operationItems[index].action.startsWith('Deleted')).length;
+                  const totalSelected = selectedIndices.length;
+                  
+                  return (
+                    <button
+                      onClick={handlePartialRevert}
+                      disabled={revertableCount === 0}
+                      className="px-4 py-1.5 rounded-lg text-xs font-semibold bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                      title={deletionCount > 0 ? `${deletionCount} selected deletions cannot be reverted` : ''}
+                    >
+                      {totalSelected === 0 
+                        ? 'Select Copy Operations to Revert'
+                        : deletionCount > 0 
+                          ? `Revert ${revertableCount} Selected Copy Operations`
+                          : `Revert ${revertableCount} Selected Copy Operations`
+                      }
+                    </button>
+                  );
+                })()}
+                <button
+                  onClick={() => {
+                    setInspectedOperation(null);
+                    setOperationItems([]);
+                  }}
+                  className="px-4 py-1.5 rounded-lg text-xs font-semibold bg-slate-700 hover:bg-slate-600 text-white cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

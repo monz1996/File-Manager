@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Database, FileText, Film, HardDrive, CheckCircle2, XCircle, X } from 'lucide-react';
 import type { SystemStatus } from '../types';
 
@@ -9,6 +9,17 @@ interface DataFilesModalProps {
 }
 
 export const DataFilesModal: React.FC<DataFilesModalProps> = ({ isOpen, onClose, status }) => {
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen || !status) return null;
 
   const dataFiles = [

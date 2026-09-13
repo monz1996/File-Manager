@@ -37,12 +37,18 @@ try:
     from .name_audit import audit_file_index_names
     from .old_but_gold_compare import compare_old_but_gold_paths, compare_package_content, compare_arbitrary_paths
     from .old_but_gold_sync import sync_all_to_remote, sync_package_to_remote
-    from .operations import load_operations_log, record_operation, revert_operation
+    from .operations import (
+        load_operations_log,
+        record_operation,
+        revert_operation,
+        revert_operation_items,
+        save_operations_log,
+    )
     from .audit_ignore import add_ignored_audit, is_audit_ignored, load_ignored_audit, remove_ignored_audit
     from .remote_catalog import build_remote_catalog
     from .remote_search import REMOTE_SECTIONS, REMOTE_SOURCES, search_remote_catalog
     from .scanner import scan_all_folders
-    from .search import search_file_index
+    from .search import is_excluded_local_entry, search_file_index
     from .video_metadata import collect_video_folder_metadata
 except ImportError:
     from config import load_config, load_remote_config, load_root_path, check_hard_drive_status
@@ -68,12 +74,18 @@ except ImportError:
     from name_audit import audit_file_index_names
     from old_but_gold_compare import compare_old_but_gold_paths, compare_package_content, compare_arbitrary_paths
     from old_but_gold_sync import sync_all_to_remote, sync_package_to_remote
-    from operations import load_operations_log, record_operation, revert_operation
+    from operations import (
+        load_operations_log,
+        record_operation,
+        revert_operation,
+        revert_operation_items,
+        save_operations_log,
+    )
     from audit_ignore import add_ignored_audit, is_audit_ignored, load_ignored_audit, remove_ignored_audit
     from remote_catalog import build_remote_catalog
     from remote_search import REMOTE_SECTIONS, REMOTE_SOURCES, search_remote_catalog
     from scanner import scan_all_folders
-    from search import search_file_index
+    from search import is_excluded_local_entry, search_file_index
     from video_metadata import collect_video_folder_metadata
 
 app = FastAPI(title="File Manager API", version="1.0.0")
@@ -192,6 +204,14 @@ def get_drive_status():
 # 2. Activity / Operations History & Revert
 # ==========================================
 
+class PartialRevertRequest(BaseModel):
+    indices: list[int]
+
+
+class DeleteOperationsRequest(BaseModel):
+    ids: list[str]
+
+
 @app.get("/api/history")
 def get_operations_history():
     return {"operations": load_operations_log()}
@@ -200,6 +220,34 @@ def get_operations_history():
 @app.post("/api/history/revert/{op_id}")
 def revert_op(op_id: str):
     success, message = revert_operation(op_id)
+    if not success:
+        raise HTTPException(status_code=400, detail=message)
+    return {"success": True, "message": message, "operations": load_operations_log()}
+
+
+@app.post("/api/history/delete")
+def delete_operations(req: DeleteOperationsRequest):
+    operations = load_operations_log()
+    ids = set(req.ids)
+    if not ids:
+        raise HTTPException(status_code=400, detail="At least one activity ID is required.")
+
+    remaining = [operation for operation in operations if operation.get("id") not in ids]
+    deleted_count = len(operations) - len(remaining)
+    if deleted_count == 0:
+        raise HTTPException(status_code=404, detail="No matching activities were found.")
+
+    save_operations_log(remaining)
+    return {
+        "success": True,
+        "deleted_count": deleted_count,
+        "operations": remaining,
+    }
+
+
+@app.post("/api/history/revert/{op_id}/items")
+def revert_op_items(op_id: str, req: PartialRevertRequest):
+    success, message = revert_operation_items(op_id, req.indices)
     if not success:
         raise HTTPException(status_code=400, detail=message)
     return {"success": True, "message": message, "operations": load_operations_log()}
@@ -353,6 +401,7 @@ def get_downloads_plan():
 def move_download_files(req: BatchMoveRequest):
     local_root = load_root_path()
     results = []
+    moved_items = []
 
     for item in req.items:
         src = Path(item.source_path)
@@ -366,22 +415,30 @@ def move_download_files(req: BatchMoveRequest):
 
         try:
             shutil.move(str(src), str(dest_file))
-            # Record operation
-            record_operation(
-                action_type="download_move",
-                source=str(src),
-                destination=str(dest_file),
-                description=f"Moved '{src.name}' to '{item.target_package}/{item.target_name}'",
-                details={
-                    "package": item.target_package,
-                    "target_name": item.target_name,
-                    "is_directory": dest_file.is_dir(),
-                    "size_bytes": dest_file.stat().st_size if dest_file.is_file() else 0,
-                },
-            )
+            moved_items.append({
+                "source": str(src),
+                "destination": str(dest_file),
+                "package": item.target_package,
+                "target_name": item.target_name,
+                "is_directory": dest_file.is_dir(),
+                "size_bytes": dest_file.stat().st_size if dest_file.is_file() else 0,
+            })
             results.append({"source": str(src), "destination": str(dest_file), "success": True})
         except Exception as exc:
             results.append({"source": str(src), "success": False, "error": str(exc)})
+
+    if moved_items:
+        first_item = moved_items[0]
+        record_operation(
+            action_type="download_move",
+            source=first_item["source"] if len(moved_items) == 1 else "Downloads",
+            destination=first_item["destination"] if len(moved_items) == 1 else str(local_root),
+            description=f"Moved {len(moved_items)} item(s) from Downloads to Local",
+            details={
+                "items": moved_items,
+                "count": len(moved_items),
+            },
+        )
 
     # Auto refresh file index in background or return updated results
     return {"results": results, "count": len(results)}
@@ -446,29 +503,20 @@ class SuggestNameRequest(BaseModel):
 @app.post("/api/downloads/suggest-name")
 def suggest_alt_name(req: SuggestNameRequest):
     """Generate a different name suggestion each time by applying alternative cleaning strategies."""
-    import re
     from pathlib import Path as _Path
     from .downloads_plan import (
-        RELEASE_TAG_PATTERN, GROUP_TAG_PATTERN, SEPARATOR_PATTERN,
-        TRAILING_COUNTER_PATTERN, MULTI_SPACE_PATTERN, MULTI_DASH_PATTERN,
-        YEAR_PATTERN,
+        YEAR_PATTERN, clean_download_name,
     )
-    import random
 
     name = req.source_name
-    stem = _Path(name).stem
     suffix = _Path(name).suffix
     ignored_suggestions = load_downloads_custom_state().get("ignored_suggestions", [])
 
     strategies = []
 
     # Strategy 0: Basic clean (same as default)
-    s = SEPARATOR_PATTERN.sub(" ", stem)
-    s = GROUP_TAG_PATTERN.sub("", s)
-    s = RELEASE_TAG_PATTERN.sub(" ", s)
-    s = TRAILING_COUNTER_PATTERN.sub("", s)
-    s = MULTI_DASH_PATTERN.sub("-", s)
-    s = MULTI_SPACE_PATTERN.sub(" ", s).strip(" .-_")
+    cleaned_name, _ = clean_download_name(name)
+    s = _Path(cleaned_name).stem
     strategies.append(s)
 
     # Strategy 1: Title Case
@@ -477,20 +525,12 @@ def suggest_alt_name(req: SuggestNameRequest):
 
     # Strategy 2: Remove year
     s2 = YEAR_PATTERN.sub("", strategies[0])
-    s2 = MULTI_SPACE_PATTERN.sub(" ", s2).strip(" .-_")
+    s2 = " ".join(s2.split()).strip(" .-_")
     strategies.append(s2)
 
     # Strategy 3: Uppercase first letter only
     s3 = strategies[0].capitalize() if strategies[0] else strategies[0]
     strategies.append(s3)
-
-    # Strategy 4: Remove all special chars
-    s4 = re.sub(r"[^\w\s]", "", strategies[0]).strip()
-    s4 = MULTI_SPACE_PATTERN.sub(" ", s4).strip()
-    strategies.append(s4)
-
-    # Strategy 5: Keep original stem as-is
-    strategies.append(stem)
 
     # Filter out strategies matching current suggestion or ignored
     candidates = []
@@ -503,8 +543,9 @@ def suggest_alt_name(req: SuggestNameRequest):
         candidates.append((idx, full))
 
     if not candidates:
-        # Fallback: return original name with suffix
-        return {"suggestion": name, "strategy": "original", "seed": req.seed}
+        # Keep the result clean even when every alternate suggestion is ignored.
+        cleaned_name, _ = clean_download_name(name)
+        return {"suggestion": cleaned_name, "strategy": "cleaned", "seed": req.seed}
 
     # Use seed to pick different result each time
     pick_idx = req.seed % len(candidates)
@@ -562,7 +603,7 @@ def compare_package(package: str):
 class SyncRequest(BaseModel):
     package: str | None = None
     sync_all: bool = False
-    delete_remote_extra: bool = False
+    delete_remote_extra: bool = True
     dry_run: bool = False
 
 
@@ -650,11 +691,12 @@ def browse_dirs(path: str = ""):
 class MoveSelectedRequest(BaseModel):
     package: str
     files: list[str]
+    delete_files: list[str] | None = None
 
 
 @app.post("/api/old-gold/move-selected")
 def move_selected_to_remote(req: MoveSelectedRequest):
-    """Copy selected files from local to the remote drive."""
+    """Copy local selections and delete selected remote-only files."""
     local_root = load_root_path()
     remote_root = _remote_old_but_gold_root()
 
@@ -665,6 +707,7 @@ def move_selected_to_remote(req: MoveSelectedRequest):
     remote_pkg = remote_root / req.package
 
     copied = []
+    deleted = []
     errors = []
     for rel_path in req.files:
         src = local_pkg / rel_path
@@ -679,18 +722,44 @@ def move_selected_to_remote(req: MoveSelectedRequest):
         except Exception as exc:
             errors.append({"file": rel_path, "error": str(exc)})
 
-    if copied:
+    for rel_path in req.delete_files or []:
+        remote_file = remote_pkg / rel_path
+        if not remote_file.exists():
+            errors.append({"file": rel_path, "error": "Remote file not found"})
+            continue
+        try:
+            if remote_file.is_dir():
+                shutil.rmtree(remote_file)
+            else:
+                remote_file.unlink()
+            deleted.append(rel_path)
+        except Exception as exc:
+            errors.append({"file": rel_path, "error": str(exc)})
+
+    if copied or deleted:
         record_operation(
             action_type="drive_sync",
             source=str(local_pkg),
             destination=str(remote_pkg),
-            description=f"Manually copied {len(copied)} file(s) from '{req.package}' to remote drive.",
-            details={"copied": copied, "copied_count": len(copied), "updated_count": 0, "deleted_count": 0},
+            description=f"Updated remote package '{req.package}' (copied {len(copied)}, deleted {len(deleted)}).",
+            details={
+                "copied": copied,
+                "copied_count": len(copied),
+                "deleted": deleted,
+                "deleted_count": len(deleted),
+                "updated_count": 0,
+            },
         )
         diff = compare_old_but_gold_paths(local_root, remote_root)
         save_old_but_gold_diff(diff)
 
-    return {"copied_count": len(copied), "copied": copied, "errors": errors}
+    return {
+        "copied_count": len(copied),
+        "copied": copied,
+        "deleted_count": len(deleted),
+        "deleted": deleted,
+        "errors": errors,
+    }
 
 @app.get("/api/search/local")
 def search_local(
@@ -700,7 +769,7 @@ def search_local(
     folder: str | None = None,
     limit: int = 50,
 ):
-    files = load_file_index()
+    files = [file for file in load_file_index() if not is_excluded_local_entry(file)]
     if folder:
         files = [f for f in files if f.get("folder", "").casefold() == folder.casefold()]
 
@@ -725,7 +794,10 @@ def search_remote(
 
 @app.get("/api/search/unified")
 def search_unified(query: str = Query(..., min_length=1), limit: int = 40):
-    files = load_file_index() if FILE_INDEX.exists() else []
+    files = [
+        file for file in (load_file_index() if FILE_INDEX.exists() else [])
+        if not is_excluded_local_entry(file)
+    ]
     local_res = search_file_index(query, files, limit=limit, sort_by="match")
     # Tag each local result with location
     for r in local_res:

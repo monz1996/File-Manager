@@ -255,6 +255,17 @@
         },
         {
             "folder": "books",
+            "name": "test.txt",
+            "path": "test.txt",
+            "extension": ".txt",
+            "size_bytes": 0,
+            "created_at": "2026-09-13T12:12:59+03:00",
+            "created_timestamp": 1789290779.0706787,
+            "modified_at": "2026-09-13T12:12:59+03:00",
+            "modified_timestamp": 1789290779.0706787
+        },
+        {
+            "folder": "books",
             "name": "The Three-Body Problem - Cixin Liu (1).pdf",
             "path": "The Three-Body Problem - Cixin Liu (1).pdf",
             "extension": ".pdf",
@@ -263,6 +274,17 @@
             "created_timestamp": 1787397797.9729784,
             "modified_at": "2024-12-20T13:02:37+02:00",
             "modified_timestamp": 1734692557.7135913
+        },
+        {
+            "folder": "content",
+            "name": "Anime.json",
+            "path": "Anime.json",
+            "extension": ".json",
+            "size_bytes": 1709,
+            "created_at": "2026-09-13T01:39:31+03:00",
+            "created_timestamp": 1789252771.9246273,
+            "modified_at": "2026-09-13T11:20:44+03:00",
+            "modified_timestamp": 1789287644.3256092
         },
         {
             "folder": "content",
@@ -277,6 +299,17 @@
         },
         {
             "folder": "content",
+            "name": "Games.json",
+            "path": "Games.json",
+            "extension": ".json",
+            "size_bytes": 1289,
+            "created_at": "2026-09-13T01:39:31+03:00",
+            "created_timestamp": 1789252771.9246273,
+            "modified_at": "2026-09-13T11:20:44+03:00",
+            "modified_timestamp": 1789287644.3256092
+        },
+        {
+            "folder": "content",
             "name": "games.txt",
             "path": "games.txt",
             "extension": ".txt",
@@ -288,6 +321,17 @@
         },
         {
             "folder": "content",
+            "name": "Movies.json",
+            "path": "Movies.json",
+            "extension": ".json",
+            "size_bytes": 22060,
+            "created_at": "2026-09-13T01:39:31+03:00",
+            "created_timestamp": 1789252771.9246273,
+            "modified_at": "2026-09-13T11:20:44+03:00",
+            "modified_timestamp": 1789287644.3256092
+        },
+        {
+            "folder": "content",
             "name": "movies.txt",
             "path": "movies.txt",
             "extension": ".txt",
@@ -296,6 +340,17 @@
             "created_timestamp": 1787397798.0354826,
             "modified_at": "2026-09-11T17:17:22+03:00",
             "modified_timestamp": 1789136242.427297
+        },
+        {
+            "folder": "content",
+            "name": "Series.json",
+            "path": "Series.json",
+            "extension": ".json",
+            "size_bytes": 1357,
+            "created_at": "2026-09-13T01:39:31+03:00",
+            "created_timestamp": 1789252771.9246273,
+            "modified_at": "2026-09-13T11:20:44+03:00",
+            "modified_timestamp": 1789287644.3256092
         },
         {
             "folder": "content",
@@ -4322,17 +4377,6 @@
             "created_timestamp": 1789138279.4003055,
             "modified_at": "2014-06-11T00:11:04+03:00",
             "modified_timestamp": 1402434664.0
-        },
-        {
-            "folder": "new_folder",
-            "name": ".travis.yml",
-            "path": "testdisk-7.1-WIP/.travis.yml",
-            "extension": ".yml",
-            "size_bytes": 1358,
-            "created_at": "2026-09-11T17:51:19+03:00",
-            "created_timestamp": 1789138279.4043062,
-            "modified_at": "2017-04-05T14:26:10+02:00",
-            "modified_timestamp": 1491395170.0
         },
         {
             "folder": "new_folder",
@@ -12520,17 +12564,6 @@
         },
         {
             "folder": "songs",
-            "name": "desktop.ini",
-            "path": "Anime/desktop.ini",
-            "extension": ".ini",
-            "size_bytes": 90,
-            "created_at": "2026-09-11T17:25:43+03:00",
-            "created_timestamp": 1789136743.0673528,
-            "modified_at": "2026-09-11T17:25:43+03:00",
-            "modified_timestamp": 1789136743.0808735
-        },
-        {
-            "folder": "songs",
             "name": "ENGLISH Let Me Hear Parasyte _AmaLee_ - Maou sama - SoundLoadMate.com.mp3",
             "path": "Anime/ENGLISH Let Me Hear Parasyte _AmaLee_ - Maou sama - SoundLoadMate.com.mp3",
             "extension": ".mp3",
@@ -15443,72 +15476,6 @@
             "created_timestamp": 1787399293.8194678,
             "modified_at": "2022-08-14T22:53:55+03:00",
             "modified_timestamp": 1660506835.6705942
-        },
-        {
-            "folder": "songs",
-            "name": "testttt - Copy (2).txt",
-            "path": "test1/testttt - Copy (2).txt",
-            "extension": ".txt",
-            "size_bytes": 0,
-            "created_at": "2026-09-12T23:08:25+03:00",
-            "created_timestamp": 1789243705.6633048,
-            "modified_at": "2026-09-12T23:08:21+03:00",
-            "modified_timestamp": 1789243701.0827062
-        },
-        {
-            "folder": "songs",
-            "name": "testttt - Copy.txt",
-            "path": "test1/testttt - Copy.txt",
-            "extension": ".txt",
-            "size_bytes": 0,
-            "created_at": "2026-09-12T23:08:24+03:00",
-            "created_timestamp": 1789243704.8764572,
-            "modified_at": "2026-09-12T23:08:21+03:00",
-            "modified_timestamp": 1789243701.0827062
-        },
-        {
-            "folder": "songs",
-            "name": "testttt.txt",
-            "path": "test1/testttt.txt",
-            "extension": ".txt",
-            "size_bytes": 0,
-            "created_at": "2026-09-12T23:08:21+03:00",
-            "created_timestamp": 1789243701.0827062,
-            "modified_at": "2026-09-12T23:08:21+03:00",
-            "modified_timestamp": 1789243701.0827062
-        },
-        {
-            "folder": "songs",
-            "name": "testttt - Copy (2).txt",
-            "path": "test2/testttt - Copy (2).txt",
-            "extension": ".txt",
-            "size_bytes": 0,
-            "created_at": "2026-09-12T23:08:33+03:00",
-            "created_timestamp": 1789243713.4287255,
-            "modified_at": "2026-09-12T23:08:21+03:00",
-            "modified_timestamp": 1789243701.0827062
-        },
-        {
-            "folder": "songs",
-            "name": "testttt - Copy.txt",
-            "path": "test2/testttt - Copy.txt",
-            "extension": ".txt",
-            "size_bytes": 0,
-            "created_at": "2026-09-12T23:08:33+03:00",
-            "created_timestamp": 1789243713.0096729,
-            "modified_at": "2026-09-12T23:08:21+03:00",
-            "modified_timestamp": 1789243701.0827062
-        },
-        {
-            "folder": "songs",
-            "name": "testttt.txt",
-            "path": "test2/testttt.txt",
-            "extension": ".txt",
-            "size_bytes": 0,
-            "created_at": "2026-09-12T23:08:27+03:00",
-            "created_timestamp": 1789243707.7685244,
-            "modified_at": "2026-09-12T23:08:21+03:00",
-            "modified_timestamp": 1789243701.0827062
         },
         {
             "folder": "songs",

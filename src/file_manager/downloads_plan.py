@@ -1,24 +1,31 @@
 from __future__ import annotations
 
 import re
+import struct
 from datetime import datetime
-from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Any
 
 try:
     from .downloads_ignore import is_ignored
+    from .path_visibility import is_hidden_or_system
+    from .video_metadata import _get_video_duration_seconds
 except ImportError:
     from downloads_ignore import is_ignored
+    from path_visibility import is_hidden_or_system
+    from video_metadata import _get_video_duration_seconds
 
 
 VIDEO_EXTENSIONS = {
     ".3gp", ".avi", ".flv", ".m4v", ".mkv", ".mov", ".mp4",
-    ".mpeg", ".mpg", ".webm", ".wmv",
+    ".mpeg", ".mpg", ".m2ts", ".ogv", ".ts", ".vob", ".webm", ".wmv",
 }
 BOOK_EXTENSIONS = {".pdf", ".epub", ".mobi", ".azw", ".azw3", ".djvu", ".txt", ".doc", ".docx"}
 MUSIC_EXTENSIONS = {".mp3", ".flac", ".wav", ".aac", ".ogg", ".m4a", ".wma"}
-PICTURE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".heic", ".tiff"}
+PICTURE_EXTENSIONS = {
+    ".avif", ".bmp", ".gif", ".heic", ".ico", ".jfif", ".jpeg", ".jpg",
+    ".jxl", ".png", ".psd", ".raw", ".svg", ".tga", ".tiff", ".webp",
+}
 ARCHIVE_EXTENSIONS = {".zip", ".rar", ".7z", ".tar", ".gz"}
 
 # Release-scene junk commonly found in downloaded movie/show folder or file names.
@@ -30,12 +37,15 @@ RELEASE_TAG_PATTERN = re.compile(
     r")\b",
     re.IGNORECASE,
 )
+SOURCE_TAG_PATTERN = re.compile(
+    r"\b(?:ytdown|y2mate)(?:\s*[\._-]?\s*com)?\b|\b(?:youtube|media)\b",
+    re.IGNORECASE,
+)
 GROUP_TAG_PATTERN = re.compile(r"[\[\(][A-Za-z0-9]{2,15}[\]\)]\s*$")
 YEAR_PATTERN = re.compile(r"\((19|20)\d{2}\)|\b(19|20)\d{2}\b")
 TRAILING_COUNTER_PATTERN = re.compile(r"\s*[\(\[]\d+[\)\]]\s*$")
-SEPARATOR_PATTERN = re.compile(r"[._]+")
+SEPARATOR_PATTERN = re.compile(r"[._-]+")
 MULTI_SPACE_PATTERN = re.compile(r"\s{2,}")
-MULTI_DASH_PATTERN = re.compile(r"-{2,}")
 
 FALLBACK_PACKAGE = "New folder"
 
@@ -45,6 +55,17 @@ DEFAULT_EXTENSION_PACKAGE_HINTS = {
     **{ext: "Music" for ext in MUSIC_EXTENSIONS},
     **{ext: "pictures" for ext in PICTURE_EXTENSIONS},
 }
+
+GENERIC_PACKAGE_NAMES = {
+    "game", "games", "movie", "movies", "series", "anime", "cartoon",
+    "english", "arabic", "compilation", "compilations", "stickman",
+    "cinematic", "cinematics", "song", "songs", "music", "phone",
+    "long", "video", "videos",
+}
+
+ARABIC_PATTERN = re.compile(r"[\u0600-\u06ff]")
+RECORDING_PATTERN = re.compile(r"\brecord(?:ing|ings|ed)?\b", re.IGNORECASE)
+SPANKBANG_PATTERN = re.compile(r"\bspankbang\b", re.IGNORECASE)
 
 
 def build_downloads_plan(
@@ -72,7 +93,7 @@ def build_downloads_plan(
     package_names = _existing_package_names(old_but_gold_root)
 
     entries = sorted(
-        (item for item in downloads_root.iterdir() if item.name != "desktop.ini"),
+        (item for item in downloads_root.iterdir() if not is_hidden_or_system(item)),
         key=lambda item: item.name.casefold(),
     )
 
@@ -110,9 +131,13 @@ def _build_entry_plan(
     old_but_gold_root: Path,
 ) -> dict[str, Any]:
     is_dir = entry.is_dir()
-    package, recommended_name, reason = recommend_name_and_package(
-        entry.name, is_dir, package_names,
+    package, reason = _recommend_package(
+        entry.name, is_dir, package_names, source_path=entry,
     )
+    cleaned_name, was_changed = clean_download_name(entry.name)
+    recommended_name = cleaned_name
+    if was_changed:
+        reason = f"{reason}; cleaned up release/formatting junk in the name"
     recommended_relative_path = f"{package}/{recommended_name}"
     destination = old_but_gold_root / package / recommended_name
 
@@ -143,7 +168,11 @@ def _existing_package_names(old_but_gold_root: Path) -> list[str]:
         return []
 
     return sorted(
-        (item.name for item in old_but_gold_root.iterdir() if item.is_dir()),
+        (
+            item.relative_to(old_but_gold_root).as_posix()
+            for item in old_but_gold_root.rglob("*")
+            if item.is_dir()
+        ),
         key=str.casefold,
     )
 
@@ -152,12 +181,42 @@ def _recommend_package(
     name: str,
     is_dir: bool,
     package_names: list[str],
+    source_path: Path | None = None,
 ) -> tuple[str, str]:
     extension = Path(name).suffix.casefold()
 
-    best_match, best_score = _best_package_match(name, package_names)
-    if best_score >= 0.6:
-        return best_match, f"name closely matches existing package '{best_match}'"
+    if SPANKBANG_PATTERN.search(name):
+        package = _closest_existing("New folder/testdisk-7.1-WIP/recup_dir.2", package_names)
+        return package, "name contains 'SpankBang', routed to the recovery folder"
+
+    if not is_dir and extension in PICTURE_EXTENSIONS:
+        package = _closest_existing("pictures", package_names)
+        return package, "image file routed to pictures"
+
+    if RECORDING_PATTERN.search(name):
+        package = _closest_existing("Recordings", package_names)
+        return package, "recording routed to Recordings"
+
+    matched_package = _match_package_by_name(name, package_names, extension)
+    if matched_package:
+        return matched_package, f"name matches existing package '{matched_package}'"
+
+    if not is_dir and extension in VIDEO_EXTENSIONS:
+        duration = _video_duration(source_path)
+        language = _media_language(name)
+        if duration is not None and duration < 4 * 60:
+            package = f"Songs/{language}" if language else "Songs"
+            return _closest_existing(package, package_names), "short video routed to Songs by filename language"
+        if duration is not None and 4 * 60 < duration < 9 * 60:
+            package = f"videos/{language}" if language else "videos"
+            return _closest_existing(package, package_names), "medium-length video routed to videos by filename language"
+        if duration is not None and duration > 9 * 60:
+            package = _closest_existing("videos/long videos", package_names)
+            return package, "long video routed to long videos"
+
+    if not is_dir and extension == ".pdf":
+        package = _closest_existing("books", package_names)
+        return package, "PDF file routed to books"
 
     if not is_dir and extension in DEFAULT_EXTENSION_PACKAGE_HINTS:
         hinted = DEFAULT_EXTENSION_PACKAGE_HINTS[extension]
@@ -182,26 +241,69 @@ def _closest_existing(preferred: str, package_names: list[str]) -> str:
     return preferred
 
 
-def _best_package_match(name: str, package_names: list[str]) -> tuple[str, float]:
-    if not package_names:
-        return FALLBACK_PACKAGE, 0.0
-
-    normalized_name = _normalize_for_matching(name)
-    best_match = FALLBACK_PACKAGE
-    best_score = 0.0
+def _match_package_by_name(
+    name: str,
+    package_names: list[str],
+    extension: str,
+) -> str | None:
+    normalized_name = _normalize_for_matching(Path(name).stem)
+    compact_name = normalized_name.replace(" ", "")
+    candidates: list[tuple[int, int, str]] = []
 
     for package_name in package_names:
-        normalized_package = _normalize_for_matching(package_name)
-        score = SequenceMatcher(None, normalized_name, normalized_package).ratio()
+        package_leaf = Path(package_name).name
+        package_tokens = [
+            token for token in _normalize_for_matching(package_leaf).split()
+            if token not in GENERIC_PACKAGE_NAMES
+        ]
+        normalized_package = " ".join(package_tokens)
+        compact_package = normalized_package.replace(" ", "")
+        if len(compact_package) < 4 or not normalized_package:
+            continue
 
-        if normalized_package and normalized_package in normalized_name:
-            score = max(score, 0.75)
+        if normalized_package not in normalized_name and compact_package not in compact_name:
+            continue
 
-        if score > best_score:
-            best_score = score
-            best_match = package_name
+        category_rank = _package_category_rank(package_name, extension)
+        candidates.append((category_rank, len(compact_package), package_name))
 
-    return best_match, best_score
+    if not candidates:
+        return None
+
+    candidates.sort(key=lambda candidate: (-candidate[0], -candidate[1], candidate[2].casefold()))
+    return candidates[0][2]
+
+
+def _package_category_rank(package_name: str, extension: str) -> int:
+    root = package_name.split("/", 1)[0].casefold()
+    if extension in VIDEO_EXTENSIONS and root == "videos":
+        return 3
+    if extension in MUSIC_EXTENSIONS and root in {"songs", "music"}:
+        return 3
+    if extension in PICTURE_EXTENSIONS and root == "pictures":
+        return 3
+    if extension in BOOK_EXTENSIONS and root == "books":
+        return 3
+    return 1
+
+
+def _video_duration(source_path: Path | None) -> float | None:
+    if source_path is None:
+        return None
+    try:
+        return _get_video_duration_seconds(source_path)
+    except (OSError, ValueError, ZeroDivisionError, struct.error):
+        return None
+
+
+def _media_language(name: str) -> str | None:
+    if ARABIC_PATTERN.search(name):
+        return "Arabic"
+
+    letters = [character for character in Path(name).stem if character.isalpha()]
+    if letters and all("A" <= character <= "Z" or "a" <= character <= "z" for character in letters):
+        return "English"
+    return None
 
 
 def _normalize_for_matching(value: str) -> str:
@@ -215,16 +317,16 @@ def _looks_like_movie_or_show(name: str) -> bool:
     return bool(YEAR_PATTERN.search(name)) or bool(RELEASE_TAG_PATTERN.search(name))
 
 
-def _clean_name(name: str) -> tuple[str, bool]:
+def clean_download_name(name: str) -> tuple[str, bool]:
     original = name
     stem = Path(name).stem
     suffix = Path(name).suffix
 
     cleaned = SEPARATOR_PATTERN.sub(" ", stem)
+    cleaned = SOURCE_TAG_PATTERN.sub(" ", cleaned)
     cleaned = GROUP_TAG_PATTERN.sub("", cleaned)
     cleaned = RELEASE_TAG_PATTERN.sub(" ", cleaned)
     cleaned = TRAILING_COUNTER_PATTERN.sub("", cleaned)
-    cleaned = MULTI_DASH_PATTERN.sub("-", cleaned)
     cleaned = MULTI_SPACE_PATTERN.sub(" ", cleaned)
     cleaned = cleaned.strip(" .-_")
 
@@ -234,3 +336,6 @@ def _clean_name(name: str) -> tuple[str, bool]:
     cleaned_name = f"{cleaned}{suffix}"
 
     return cleaned_name, cleaned_name != original
+
+
+_clean_name = clean_download_name

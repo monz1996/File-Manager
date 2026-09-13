@@ -191,44 +191,44 @@ def save_remote_catalog(catalog: dict[str, Any]) -> None:
     names_dict = catalog.get("names", {})
     tbd_dict = catalog.get("to_be_downloaded", {})
 
-    target_content_directories: list[Path] = []
-
-    try:
-        local_root = load_root_path()
-        local_content = local_root / "Content"
-        local_content.mkdir(parents=True, exist_ok=True)
-        target_content_directories.append(local_content)
-    except Exception:
-        pass
-
-    try:
-        drive_path, _ = load_remote_config()
-        remote_root = Path(f"{drive_path.drive}\\") if drive_path.drive else drive_path
-        if remote_root.exists():
-            remote_content = remote_root / "old but gold" / "Content"
-            remote_content.mkdir(parents=True, exist_ok=True)
-            target_content_directories.append(remote_content)
-    except Exception:
-        pass
+    target_content_directories = _catalog_content_directories()
 
     for content_dir in target_content_directories:
-        try:
-            for section, filename in SECTION_FILE_NAMES.items():
-                items = names_dict.get(section, [])
-                tbd_items = tbd_dict.get(section, [])
-                section_data = {
-                    "section": section.capitalize(),
-                    "updated_at": now_iso,
-                    "total_items": len(items),
-                    "items": sorted(items, key=str.casefold),
-                    "to_be_downloaded_count": len(tbd_items),
-                    "to_be_downloaded": sorted(tbd_items, key=str.casefold),
-                }
-                out_path = content_dir / filename
-                with out_path.open("w", encoding="utf-8") as f:
-                    json.dump(section_data, f, indent=4, ensure_ascii=False)
-        except Exception:
-            pass
+        for section, filename in SECTION_FILE_NAMES.items():
+            items = names_dict.get(section, [])
+            tbd_items = tbd_dict.get(section, [])
+            section_data = {
+                "section": section.capitalize(),
+                "updated_at": now_iso,
+                "total_items": len(items),
+                "items": sorted(items, key=str.casefold),
+                "to_be_downloaded_count": len(tbd_items),
+                "to_be_downloaded": sorted(tbd_items, key=str.casefold),
+            }
+            out_path = content_dir / filename
+            with out_path.open("w", encoding="utf-8") as f:
+                json.dump(section_data, f, indent=4, ensure_ascii=False)
+
+
+def _catalog_content_directories() -> list[Path]:
+    """Return local and remote Content folders used by catalog scans."""
+    directories: list[Path] = []
+
+    local_content = load_root_path() / "Content"
+    local_content.mkdir(parents=True, exist_ok=True)
+    directories.append(local_content)
+
+    drive_path, _ = load_remote_config()
+    if drive_path.drive:
+        remote_root = Path(f"{drive_path.drive}\\")
+    else:
+        remote_root = drive_path
+    if remote_root.exists():
+        remote_content = remote_root / "old but gold" / "Content"
+        remote_content.mkdir(parents=True, exist_ok=True)
+        directories.append(remote_content)
+
+    return directories
 
 
 def save_old_but_gold_diff(diff: dict[str, Any]) -> None:

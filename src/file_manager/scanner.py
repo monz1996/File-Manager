@@ -1,13 +1,18 @@
 from datetime import datetime
 from pathlib import Path
 
+try:
+    from .path_visibility import is_hidden_or_system
+except ImportError:
+    from path_visibility import is_hidden_or_system
+
 
 def scan_folder(folder_path: Path) -> list[dict]:
     """Return all files inside a folder and its subfolders."""
     return [
         _build_file_entry(file, folder_path)
         for file in folder_path.rglob("*")
-        if file.is_file()
+        if file.is_file() and not is_hidden_or_system(file)
     ]
 
 

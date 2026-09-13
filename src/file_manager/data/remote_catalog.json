@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-09-12T15:09:24+03:00",
+    "generated_at": "2026-09-13T13:28:55+03:00",
     "drive": "D:",
     "drive_imported": true,
     "root_path": "D:\\",
@@ -485,8 +485,29 @@
     "to_be_downloaded": {
         "anime": [],
         "games": [],
-        "movies": [],
-        "series": []
+        "movies": [
+            "6ايام",
+            "Don't look up",
+            "France vs England 2026",
+            "Odyssey",
+            "Spiderman Brand new day",
+            "الخلية",
+            "الرهينة",
+            "الشبح",
+            "المصلحة",
+            "بدل فاقد",
+            "حلم عزيز",
+            "سبع البرمبة",
+            "مسجون ترانزيت",
+            "مصر والارجنتين 2026"
+        ],
+        "series": [
+            "First love",
+            "اشغال شقة",
+            "بالطو",
+            "ريفو",
+            "سفاح الجيزة"
+        ]
     },
     "to_be_downloaded_mode": "manual",
     "sources": {
@@ -515,7 +536,7 @@
             "local_available": false,
             "remote_count": 382,
             "local_count": 0,
-            "to_be_downloaded_count": 0
+            "to_be_downloaded_count": 14
         },
         "series": {
             "remote_path": "D:\\series",
@@ -524,7 +545,7 @@
             "local_available": false,
             "remote_count": 32,
             "local_count": 0,
-            "to_be_downloaded_count": 0
+            "to_be_downloaded_count": 5
         }
     }
 }

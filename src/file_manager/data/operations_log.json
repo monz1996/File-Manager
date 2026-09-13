@@ -1,0 +1,178 @@
+{
+    "operations": [
+        {
+            "id": "4a548543-dbe1-4e2c-ab4e-d841b91569ff",
+            "timestamp": "2026-09-13T13:23:04+03:00",
+            "action_type": "drive_sync",
+            "source": "C:\\Users\\minas\\Desktop\\old but gold\\books",
+            "destination": "D:\\old but gold\\books",
+            "description": "Updated remote package 'books' (copied 1, deleted 0).",
+            "details": {
+                "copied": [
+                    "dww.txt"
+                ],
+                "copied_count": 1,
+                "deleted": [],
+                "deleted_count": 0,
+                "updated_count": 0
+            },
+            "status": "completed"
+        },
+        {
+            "id": "0990373d-9989-428e-958d-082ad9007218",
+            "timestamp": "2026-09-13T13:22:20+03:00",
+            "action_type": "drive_sync",
+            "source": "C:\\Users\\minas\\Desktop\\old but gold\\books",
+            "destination": "D:\\old but gold\\books",
+            "description": "Updated remote package 'books' (copied 0, deleted 1).",
+            "details": {
+                "copied": [],
+                "copied_count": 0,
+                "deleted": [
+                    "rwewe.txt"
+                ],
+                "deleted_count": 1,
+                "updated_count": 0
+            },
+            "status": "completed"
+        },
+        {
+            "id": "bbb2aa62-3c49-4b1e-93f3-db15af5df1e0",
+            "timestamp": "2026-09-13T13:22:13+03:00",
+            "action_type": "drive_sync",
+            "source": "C:\\Users\\minas\\Desktop\\old but gold\\books",
+            "destination": "D:\\old but gold\\books",
+            "description": "Updated remote package 'books' (copied 1, deleted 0).",
+            "details": {
+                "copied": [],
+                "copied_count": 0,
+                "deleted": [],
+                "deleted_count": 0,
+                "updated_count": 0
+            },
+            "status": "reverted",
+            "reverted_at": "2026-09-13T13:22:35+03:00"
+        },
+        {
+            "id": "c4bda5a1-ac1d-4464-a8c2-61092f124bd1",
+            "timestamp": "2026-09-13T13:19:43+03:00",
+            "action_type": "drive_sync",
+            "source": "C:\\Users\\minas\\Desktop\\old but gold\\books",
+            "destination": "D:\\old but gold\\books",
+            "description": "Updated remote package 'books' (copied 1, deleted 0).",
+            "details": {
+                "copied": [
+                    "rwewe.txt"
+                ],
+                "copied_count": 1,
+                "deleted": [],
+                "deleted_count": 0,
+                "updated_count": 0
+            },
+            "status": "completed"
+        },
+        {
+            "id": "d849f392-1053-4b87-bbf5-69dbcb291b67",
+            "timestamp": "2026-09-13T13:18:49+03:00",
+            "action_type": "drive_sync",
+            "source": "C:\\Users\\minas\\Desktop\\old but gold\\books",
+            "destination": "D:\\old but gold\\books",
+            "description": "Updated remote package 'books' (copied 1, deleted 0).",
+            "details": {
+                "copied": [
+                    "rwewe.txt"
+                ],
+                "copied_count": 1,
+                "deleted": [],
+                "deleted_count": 0,
+                "updated_count": 0
+            },
+            "status": "completed"
+        },
+        {
+            "id": "ecfe23c2-5e1d-4415-a536-e985bddbc48b",
+            "timestamp": "2026-09-13T13:18:35+03:00",
+            "action_type": "drive_sync",
+            "source": "C:\\Users\\minas\\Desktop\\old but gold\\books",
+            "destination": "D:\\old but gold\\books",
+            "description": "Updated remote package 'books' (copied 1, deleted 0).",
+            "details": {
+                "copied": [
+                    "rwewe.txt"
+                ],
+                "copied_count": 1,
+                "deleted": [],
+                "deleted_count": 0,
+                "updated_count": 0
+            },
+            "status": "reverted",
+            "reverted_at": "2026-09-13T13:19:35+03:00"
+        },
+        {
+            "id": "833a1b62-022d-4c9f-b2d7-89599917ef2e",
+            "timestamp": "2026-09-13T13:17:49+03:00",
+            "action_type": "download_move",
+            "source": "C:\\Users\\minas\\Downloads\\rwewe.txt",
+            "destination": "C:\\Users\\minas\\Desktop\\old but gold\\books\\rwewe.txt",
+            "description": "Moved 1 item(s) from Downloads to Local",
+            "details": {
+                "items": [
+                    {
+                        "source": "C:\\Users\\minas\\Downloads\\rwewe.txt",
+                        "destination": "C:\\Users\\minas\\Desktop\\old but gold\\books\\rwewe.txt",
+                        "package": "books",
+                        "target_name": "rwewe.txt",
+                        "is_directory": false,
+                        "size_bytes": 0
+                    }
+                ],
+                "count": 1
+            },
+            "status": "completed"
+        },
+        {
+            "id": "2e969fcb-e7e5-476d-a77e-7134178a28b4",
+            "timestamp": "2026-09-13T13:15:58+03:00",
+            "action_type": "download_move",
+            "source": "C:\\Users\\minas\\Downloads\\wwswd.mp4",
+            "destination": "C:\\Users\\minas\\Desktop\\old but gold\\books\\wwswd.mp4",
+            "description": "Moved 1 item(s) from Downloads to Local",
+            "details": {
+                "items": [
+                    {
+                        "source": "C:\\Users\\minas\\Downloads\\wwswd.mp4",
+                        "destination": "C:\\Users\\minas\\Desktop\\old but gold\\books\\wwswd.mp4",
+                        "package": "books",
+                        "target_name": "wwswd.mp4",
+                        "is_directory": false,
+                        "size_bytes": 139462571
+                    }
+                ],
+                "count": 1
+            },
+            "status": "reverted",
+            "reverted_at": "2026-09-13T13:16:11+03:00"
+        },
+        {
+            "id": "17d3b9a6-620b-4079-baab-b20d98028658",
+            "timestamp": "2026-09-13T13:10:32+03:00",
+            "action_type": "drive_sync",
+            "source": "C:\\Users\\minas\\Desktop\\old but gold\\books",
+            "destination": "D:\\old but gold\\books",
+            "description": "Updated remote package 'books' (copied 1, deleted 1).",
+            "details": {
+                "copied": [
+                    "dwwd.txt"
+                ],
+                "copied_count": 1,
+                "deleted": [
+                    "ewwe.txt"
+                ],
+                "deleted_count": 1,
+                "updated_count": 0
+            },
+            "status": "reverted",
+            "reverted_at": "2026-09-13T13:12:42+03:00"
+        }
+    ]
+}

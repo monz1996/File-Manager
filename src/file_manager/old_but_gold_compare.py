@@ -4,6 +4,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+try:
+    from .path_visibility import is_hidden_or_system
+except ImportError:
+    from path_visibility import is_hidden_or_system
+
 
 def compare_arbitrary_paths(
     local_path: Path,
@@ -169,13 +174,18 @@ def _top_level_names(path: Path) -> set[str]:
     if not path.exists():
         return set()
 
-    return {item.name for item in path.iterdir() if item.is_dir()}
+    return {
+        item.name
+        for item in path.iterdir()
+        if item.is_dir() and not is_hidden_or_system(item)
+    }
 
 
 def _relative_paths(path: Path) -> set[str]:
     return {
         item.relative_to(path).as_posix()
         for item in path.rglob("*")
+        if not is_hidden_or_system(item)
     }
 
 
@@ -183,7 +193,7 @@ def _relative_file_paths(path: Path) -> set[str]:
     return {
         item.relative_to(path).as_posix()
         for item in path.rglob("*")
-        if item.is_file()
+        if item.is_file() and not is_hidden_or_system(item)
     }
 
 

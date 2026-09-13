@@ -24,7 +24,7 @@ export const DriveSyncTab: React.FC<DriveSyncTabProps> = ({ status, onOperationD
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState<string | null>(null);
   const [dryRun, setDryRun] = useState(false);
-  const [deleteRemoteExtra, setDeleteRemoteExtra] = useState(false);
+  const [deleteRemoteExtra, setDeleteRemoteExtra] = useState(true);
   const [selectedPackage, setSelectedPackage] = useState<OldGoldDiffPackage | null>(null);
   const [movingFiles, setMovingFiles] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<Record<string, boolean>>({});
@@ -35,7 +35,7 @@ export const DriveSyncTab: React.FC<DriveSyncTabProps> = ({ status, onOperationD
 
   const isDriveAvailable = status?.connected.remote_drive.available ?? false;
 
-  const fetchDiff = async (refresh: boolean = false) => {
+  const fetchDiff = async (refresh: boolean = false): Promise<OldGoldDiffResponse | null> => {
     setLoading(true);
     setFeedback(null);
     try {
@@ -43,16 +43,18 @@ export const DriveSyncTab: React.FC<DriveSyncTabProps> = ({ status, onOperationD
       if (res.ok) {
         const data = await res.json();
         setDiff(data);
+        return data;
       }
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
+    return null;
   };
 
   useEffect(() => {
-    fetchDiff(false);
+    fetchDiff(true);
   }, []);
 
   useEffect(() => {
@@ -140,8 +142,11 @@ export const DriveSyncTab: React.FC<DriveSyncTabProps> = ({ status, onOperationD
 
   const handleMoveSelected = async () => {
     if (!selectedPackage) return;
-    const filesToMove = Object.keys(selectedFiles).filter((k) => selectedFiles[k]);
-    if (filesToMove.length === 0) return;
+    const filesToCopy = selectedPackage.only_local.filter((file) => selectedFiles[file]);
+    const filesToDelete = selectedPackage.only_remote.filter((file) => selectedFiles[file]);
+    const selectedCount = filesToCopy.length + filesToDelete.length;
+    if (selectedCount === 0) return;
+    if (!window.confirm(`Apply ${selectedCount} selected change(s) to the remote drive?`)) return;
 
     setMovingFiles(true);
     setMoveFeedback(null);
@@ -149,19 +154,27 @@ export const DriveSyncTab: React.FC<DriveSyncTabProps> = ({ status, onOperationD
       const res = await fetch('/api/old-gold/move-selected', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ package: selectedPackage.package, files: filesToMove }),
+        body: JSON.stringify({
+          package: selectedPackage.package,
+          files: filesToCopy,
+          delete_files: filesToDelete,
+        }),
       });
       const data = await res.json();
       if (res.ok) {
-        setMoveFeedback({ type: 'success', message: `Copied ${data.copied_count} file(s) to remote drive.` });
+        setMoveFeedback({
+          type: 'success',
+          message: `Copied ${data.copied_count} file(s) and deleted ${data.deleted_count} remote file(s).`,
+        });
         setSelectedFiles({});
-        fetchDiff(true);
+        const refreshedDiff = await fetchDiff(true);
         if (onOperationDone) onOperationDone();
-        // Update the selected package with refreshed diff
-        setTimeout(() => {
-          const updated = diff?.packages.find((p) => p.package === selectedPackage.package);
-          if (updated) setSelectedPackage(updated);
-        }, 500);
+        const updated = refreshedDiff?.packages.find((p) => p.package === selectedPackage.package);
+        if (updated) {
+          setSelectedPackage(updated);
+        } else {
+          setSelectedPackage(null);
+        }
       } else {
         setMoveFeedback({ type: 'error', message: data.detail || 'Failed to move files.' });
       }
@@ -499,16 +512,6 @@ export const DriveSyncTab: React.FC<DriveSyncTabProps> = ({ status, onOperationD
                       </label>
                     ))}
                   </div>
-                  <div className="mt-2 flex justify-end">
-                    <button
-                      onClick={handleMoveSelected}
-                      disabled={selectedFileCount === 0 || movingFiles || !isDriveAvailable}
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-emerald-500 hover:bg-emerald-400 text-white shadow-md shadow-emerald-500/20 disabled:opacity-40 transition cursor-pointer"
-                    >
-                      <FolderPlus className="w-3.5 h-3.5" />
-                      <span>{movingFiles ? 'Copying...' : `Move Selected (${selectedFileCount}) to Remote`}</span>
-                    </button>
-                  </div>
                 </div>
               ) : (
                 <div className="p-6 text-center rounded-lg bg-slate-900 border border-slate-700">
@@ -520,16 +523,59 @@ export const DriveSyncTab: React.FC<DriveSyncTabProps> = ({ status, onOperationD
               {/* Only Remote Files */}
               {selectedPackage.only_remote.length > 0 && (
                 <div>
-                  <h4 className="text-xs font-bold text-blue-400 mb-1.5">
-                    Only in Remote (Hard Drive) — {selectedPackage.only_remote.length} files
-                  </h4>
-                  <div className="max-h-40 overflow-y-auto p-3 rounded-lg bg-slate-900 border border-slate-700 font-mono text-[11px] space-y-1">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <h4 className="text-xs font-bold text-blue-400">
+                      Only in Remote (Hard Drive) — {selectedPackage.only_remote.length} files
+                    </h4>
+                    <label className="flex items-center gap-1.5 text-[11px] text-slate-300 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedPackage.only_remote.every((f) => selectedFiles[f])}
+                        onChange={(event) => {
+                          setSelectedFiles((prev) => {
+                            const updated = { ...prev };
+                            selectedPackage.only_remote.forEach((file) => { updated[file] = event.target.checked; });
+                            return updated;
+                          });
+                        }}
+                        className="w-3.5 h-3.5 rounded text-indigo-500 bg-slate-700 border-slate-600"
+                      />
+                      Select All
+                    </label>
+                  </div>
+                  <div className="max-h-40 overflow-y-auto p-3 rounded-lg bg-slate-900 border border-slate-700 space-y-1">
                     {selectedPackage.only_remote.map((f) => (
-                      <div key={f} className="text-blue-200 whitespace-pre-wrap break-all leading-relaxed">
-                        - {selectedPackage.package}/{f}
-                      </div>
+                      <label
+                        key={f}
+                        className={`flex items-start gap-2 px-2 py-1.5 rounded text-[11px] cursor-pointer transition ${
+                          selectedFiles[f] ? 'bg-blue-500/15 text-blue-200' : 'text-blue-200 hover:bg-slate-800'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={!!selectedFiles[f]}
+                          onChange={(event) => setSelectedFiles((prev) => ({ ...prev, [f]: event.target.checked }))}
+                          className="w-3.5 h-3.5 mt-0.5 rounded text-blue-500 bg-slate-700 border-slate-600 cursor-pointer shrink-0"
+                        />
+                        <span className="font-mono whitespace-pre-wrap break-all leading-relaxed">
+                          - {selectedPackage.package}/{f}
+                        </span>
+                      </label>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {selectedFileCount > 0 && (
+                <div className="flex justify-end">
+                  <button
+                    onClick={handleMoveSelected}
+                    disabled={movingFiles || !isDriveAvailable}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-emerald-500 hover:bg-emerald-400 text-white shadow-md shadow-emerald-500/20 disabled:opacity-40 transition cursor-pointer"
+                  >
+                    <FolderPlus className="w-3.5 h-3.5" />
+                    <span>{movingFiles ? 'Applying...' : `Move Selected (${selectedFileCount})`}</span>
+                  </button>
                 </div>
               )}
             </div>

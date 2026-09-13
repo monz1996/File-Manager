@@ -6,11 +6,18 @@ from typing import Any
 
 try:
     from .file_sort import sort_files
+    from .path_visibility import is_hidden_or_system_text
 except ImportError:
     from file_sort import sort_files
+    from path_visibility import is_hidden_or_system_text
 
 
 TOKEN_PATTERN = re.compile(r"[\w]+", re.UNICODE)
+
+
+def is_excluded_local_entry(file_entry: dict[str, Any]) -> bool:
+    folder = str(file_entry.get("folder", "")).casefold().replace("_", " ")
+    return folder == "new folder"
 
 
 def search_file_index(
@@ -31,6 +38,11 @@ def search_file_index(
     for file_entry in files:
         folder = file_entry.get("folder", "")
         path = file_entry.get("path", "")
+        if any(
+            is_hidden_or_system_text(str(value))
+            for value in (file_entry.get("name", ""), folder, path)
+        ):
+            continue
         searchable_text = f"{folder} {path}"
         score, matched_by = _score_match(query_normalized, query_tokens, searchable_text)
 

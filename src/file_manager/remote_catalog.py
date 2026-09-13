@@ -4,6 +4,11 @@ import os
 from datetime import datetime
 from pathlib import Path
 
+try:
+    from .path_visibility import is_hidden_or_system
+except ImportError:
+    from path_visibility import is_hidden_or_system
+
 
 DEFAULT_SOURCE_PATHS = {
     "anime": "Anime",
@@ -76,21 +81,29 @@ def _collect_section_names(section: str, path: Path | None) -> list[str]:
 
 def _top_level_directory_names(path: Path) -> list[str]:
     return sorted(
-        {item.name for item in path.iterdir() if item.is_dir()},
+        {item.name for item in path.iterdir() if item.is_dir() and not is_hidden_or_system(item)},
         key=str.casefold,
     )
 
 
 def _top_level_file_and_folder_names(path: Path) -> list[str]:
     return sorted(
-        {item.name for item in path.iterdir() if item.is_file() or item.is_dir()},
+        {
+            item.name
+            for item in path.iterdir()
+            if (item.is_file() or item.is_dir()) and not is_hidden_or_system(item)
+        },
         key=str.casefold,
     )
 
 
 def _recursive_file_names(path: Path) -> list[str]:
     return sorted(
-        {item.name for item in path.rglob("*") if item.is_file()},
+        {
+            item.name
+            for item in path.rglob("*")
+            if item.is_file() and not is_hidden_or_system(item)
+        },
         key=str.casefold,
     )
 

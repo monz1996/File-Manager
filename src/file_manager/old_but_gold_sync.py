@@ -7,8 +7,10 @@ from typing import Any
 
 try:
     from .old_but_gold_compare import compare_package_content
+    from .path_visibility import is_hidden_or_system
 except ImportError:
     from old_but_gold_compare import compare_package_content
+    from path_visibility import is_hidden_or_system
 
 
 def sync_package_to_remote(
@@ -251,7 +253,7 @@ def _relative_file_paths(path: Path) -> set[str]:
     return {
         item.relative_to(path).as_posix()
         for item in path.rglob("*")
-        if item.is_file()
+        if item.is_file() and not is_hidden_or_system(item)
     }
 
 
@@ -259,7 +261,7 @@ def _relative_dir_paths(path: Path) -> set[str]:
     return {
         item.relative_to(path).as_posix()
         for item in path.rglob("*")
-        if item.is_dir()
+        if item.is_dir() and not is_hidden_or_system(item)
     }
 
 
