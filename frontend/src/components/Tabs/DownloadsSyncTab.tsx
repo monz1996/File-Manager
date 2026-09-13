@@ -50,7 +50,7 @@ export const DownloadsSyncTab: React.FC<{ onOperationDone?: () => void }> = ({ o
         data.entries.forEach((e) => {
           initialEdits[e.source_path] = {
             package: e.recommended_package,
-            name: e.recommended_name,
+            name: e.source_name,
           };
         });
         setEditedPlans(initialEdits);
@@ -182,7 +182,7 @@ export const DownloadsSyncTab: React.FC<{ onOperationDone?: () => void }> = ({ o
   };
 
   const handleIgnoreSuggestion = async (entry: DownloadPlanEntry) => {
-    const suggestion = editedPlans[entry.source_path]?.name || entry.recommended_name;
+    const suggestion = editedPlans[entry.source_path]?.name || entry.source_name;
     if (suggestion && suggestion !== entry.source_name) {
       try {
         await fetch('/api/downloads/ignore-suggestion', {
@@ -206,7 +206,7 @@ export const DownloadsSyncTab: React.FC<{ onOperationDone?: () => void }> = ({ o
   };
 
   const handleSuggestDifferent = async (entry: DownloadPlanEntry) => {
-    const currentSuggestion = editedPlans[entry.source_path]?.name || entry.recommended_name;
+    const currentSuggestion = editedPlans[entry.source_path]?.name || entry.source_name;
     try {
       const res = await fetch('/api/downloads/suggest-name', {
         method: 'POST',
@@ -310,7 +310,7 @@ export const DownloadsSyncTab: React.FC<{ onOperationDone?: () => void }> = ({ o
 
     const payload = {
       items: itemsToMove.map((item) => {
-        const edit = editedPlans[item.source_path] || { package: item.recommended_package, name: item.recommended_name };
+        const edit = editedPlans[item.source_path] || { package: item.recommended_package, name: item.source_name };
         return {
           source_path: item.source_path,
           target_package: edit.package,
@@ -543,7 +543,7 @@ export const DownloadsSyncTab: React.FC<{ onOperationDone?: () => void }> = ({ o
             const isSelected = !!selectedEntries[entry.source_path];
             const currentEdit = editedPlans[entry.source_path] || {
               package: entry.recommended_package,
-              name: entry.recommended_name,
+              name: entry.source_name,
             };
 
             return (
