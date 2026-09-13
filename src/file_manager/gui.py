@@ -48,6 +48,7 @@ def main(args_list: list[str] | None = None):
         host=args.host,
         port=args.port,
         reload=args.reload,
+        timeout_graceful_shutdown=5,
     )
     server = uvicorn.Server(config)
     app.state.server = server

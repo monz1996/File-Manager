@@ -53,7 +53,7 @@ try:
     from .scanner import scan_all_folders
     from .search import search_file_index
     from .video_metadata import collect_video_folder_metadata
-    from .entertainment import preview_path, scan_entertainment
+    from .entertainment import preview_path, scan_entertainment, get_video_thumbnail, clear_thumbnail_cache, is_thumbnail_generation_available
 except ImportError:
     from config import load_config, load_remote_config, load_root_path, check_hard_drive_status
     from downloads_ignore import add_ignored_name, load_ignored_names, remove_ignored_name, save_ignored_names
@@ -92,7 +92,7 @@ except ImportError:
     from scanner import scan_all_folders
     from search import search_file_index
     from video_metadata import collect_video_folder_metadata
-    from entertainment import preview_path, scan_entertainment
+    from entertainment import preview_path, scan_entertainment, get_video_thumbnail, clear_thumbnail_cache, is_thumbnail_generation_available
 
 app = FastAPI(title="File Manager API", version="1.0.0")
 
@@ -938,6 +938,7 @@ async def get_entertainment(
         "query": query,
         "count": len(results),
         "results": results,
+        "thumbnails_available": is_thumbnail_generation_available(),
     }
 
 
@@ -949,6 +950,33 @@ def entertainment_preview(path: str):
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail="Entertainment file was not found.") from exc
     return FileResponse(target, media_type=None, filename=target.name)
+
+
+@app.get("/api/entertainment/thumbnail")
+async def entertainment_thumbnail(path: str):
+    """Generate and serve a thumbnail for a video file."""
+    root = load_root_path()
+    try:
+        target = preview_path(root, path)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="Entertainment file was not found.") from exc
+    
+    # Generate thumbnail asynchronously
+    thumbnail_path = await run_in_threadpool(get_video_thumbnail, target)
+    
+    if thumbnail_path is None or not thumbnail_path.exists():
+        # Return 404 if thumbnail generation failed (e.g., ffmpeg not available)
+        # The frontend will handle this by showing the fallback gradient
+        raise HTTPException(status_code=404, detail="Thumbnail generation failed or ffmpeg not available.")
+    
+    return FileResponse(thumbnail_path, media_type="image/jpeg", filename=thumbnail_path.name)
+
+
+@app.post("/api/entertainment/thumbnails/clear")
+def clear_thumbnails():
+    """Clear the video thumbnail cache."""
+    count = clear_thumbnail_cache()
+    return {"success": True, "deleted_count": count}
 
 
 # ==========================================

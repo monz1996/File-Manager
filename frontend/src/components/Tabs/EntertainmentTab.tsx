@@ -35,6 +35,7 @@ const LazyThumbnail: React.FC<{
   const containerRef = useRef<HTMLDivElement>(null);
   const [shouldLoad, setShouldLoad] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [videoReady, setVideoReady] = useState(false);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -54,8 +55,36 @@ const LazyThumbnail: React.FC<{
 
   return (
     <div ref={containerRef} className="w-full h-full flex items-center justify-center">
-      {!failed && item.kind === 'image' ? (
-        <img src={src} alt="" loading="lazy" decoding="async" onError={() => setFailed(true)} className="w-full h-full object-cover" />
+      {shouldLoad && !failed && item.kind === 'image' && src ? (
+        <img 
+          src={src} 
+          alt="" 
+          loading="lazy" 
+          decoding="async" 
+          onError={() => setFailed(true)}
+          className="w-full h-full object-cover" 
+        />
+      ) : shouldLoad && !failed && item.kind === 'video' && src ? (
+        <video
+          ref={(video) => {
+            if (video && video.readyState >= 1 && video.currentTime === 0) {
+              video.currentTime = Math.min(1, video.duration || 1);
+            }
+          }}
+          src={src}
+          muted
+          playsInline
+          preload="metadata"
+          onLoadedMetadata={(event) => {
+            event.currentTarget.currentTime = Math.min(1, event.currentTarget.duration || 1);
+          }}
+          onSeeked={(event) => {
+            event.currentTarget.pause();
+            setVideoReady(true);
+          }}
+          onError={() => setFailed(true)}
+          className={`w-full h-full object-cover ${videoReady ? '' : 'invisible'}`}
+        />
       ) : (
         <div className={`w-full h-full flex flex-col items-center justify-center gap-3 ${
           item.kind === 'audio'
@@ -94,7 +123,9 @@ export const EntertainmentTab: React.FC = () => {
       const response = await fetch(`/api/entertainment?${params}`);
       if (!response.ok) throw new Error(`Entertainment request failed: ${response.status}`);
       const data = await response.json();
-      if (requestId === requestIdRef.current) setItems(data.results || []);
+      if (requestId === requestIdRef.current) {
+        setItems(data.results || []);
+      }
     } catch (error) {
       if (requestId === requestIdRef.current) {
         console.error(error);
@@ -109,10 +140,8 @@ export const EntertainmentTab: React.FC = () => {
 
   useEffect(() => {
     const timer = window.setTimeout(loadItems, query ? 250 : 0);
-    const refreshTimer = window.setInterval(loadItems, 60000);
     return () => {
       window.clearTimeout(timer);
-      window.clearInterval(refreshTimer);
     };
   }, [query, sortBy, descending, refreshKey]);
 
@@ -167,7 +196,7 @@ export const EntertainmentTab: React.FC = () => {
               <div className="relative h-44 bg-slate-950 flex items-center justify-center overflow-hidden">
                 <LazyThumbnail
                   item={item}
-                  src={item.kind === 'image' ? previewUrl(item.path) : undefined}
+                  src={item.kind === 'image' || item.kind === 'video' ? previewUrl(item.path) : undefined}
                   icon={iconFor(item.kind)}
                 />
                 <span className="absolute bottom-2 left-2 px-2 py-1 rounded-md bg-black/70 text-[10px] text-white">{item.extension || 'file'}</span>

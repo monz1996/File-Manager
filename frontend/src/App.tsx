@@ -186,6 +186,15 @@ export const App: React.FC = () => {
 
   const handleShutdownApp = async () => {
     try {
+      statusRequestRef.current?.abort();
+      driveRequestRef.current?.abort();
+      document.querySelectorAll('video').forEach((video) => {
+        video.pause();
+        video.removeAttribute('src');
+        video.load();
+      });
+      await new Promise((resolve) => window.setTimeout(resolve, 100));
+
       const res = await fetch('/api/shutdown', { method: 'POST' });
       const data = await res.json();
       if (!res.ok) {

@@ -1,6 +1,28 @@
 {
     "operations": [
         {
+            "id": "b488c881-f804-479a-9aaf-7ceb744b2c21",
+            "timestamp": "2026-09-13T22:35:50+03:00",
+            "action_type": "download_move",
+            "source": "C:\\Users\\minas\\Downloads\\كسوف كلي للشمس في أستراليا.mp4",
+            "destination": "C:\\Users\\minas\\Desktop\\old but gold\\videos\\Arabic\\كسوف كلي للشمس في أستراليا.mp4",
+            "description": "Moved 1 item(s) from Downloads to Local",
+            "details": {
+                "items": [
+                    {
+                        "source": "C:\\Users\\minas\\Downloads\\كسوف كلي للشمس في أستراليا.mp4",
+                        "destination": "C:\\Users\\minas\\Desktop\\old but gold\\videos\\Arabic\\كسوف كلي للشمس في أستراليا.mp4",
+                        "package": "videos/Arabic",
+                        "target_name": "كسوف كلي للشمس في أستراليا.mp4",
+                        "is_directory": false,
+                        "size_bytes": 1004769
+                    }
+                ],
+                "count": 1
+            },
+            "status": "completed"
+        },
+        {
             "id": "d3f15c7e-b4f5-473c-be6b-968872a9ced9",
             "timestamp": "2026-09-13T20:47:29+03:00",
             "action_type": "drive_sync",
