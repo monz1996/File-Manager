@@ -31,6 +31,13 @@ export const Header: React.FC<HeaderProps> = ({
   const [rechecking, setRechecking] = React.useState(false);
   const [ejecting, setEjecting] = React.useState(false);
   const [shuttingDown, setShuttingDown] = React.useState(false);
+  const recheckTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  React.useEffect(() => () => {
+    if (recheckTimeoutRef.current) {
+      clearTimeout(recheckTimeoutRef.current);
+    }
+  }, []);
 
   const isDriveConnected = status?.connected.remote_drive.available ?? false;
   const isLocalConnected = status?.connected.local_root.available ?? false;
@@ -38,7 +45,13 @@ export const Header: React.FC<HeaderProps> = ({
   const handleRecheckDrive = async () => {
     setRechecking(true);
     onRefreshAll();
-    setTimeout(() => setRechecking(false), 1500);
+    if (recheckTimeoutRef.current) {
+      clearTimeout(recheckTimeoutRef.current);
+    }
+    recheckTimeoutRef.current = setTimeout(() => {
+      setRechecking(false);
+      recheckTimeoutRef.current = null;
+    }, 1500);
   };
 
   const handleEjectDrive = async () => {

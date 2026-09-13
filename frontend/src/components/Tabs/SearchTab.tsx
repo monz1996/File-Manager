@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Search, 
   Folder, 
@@ -28,6 +28,13 @@ export const SearchTab: React.FC = () => {
   const [remoteResults, setRemoteResults] = useState<any[]>([]);
   const [copiedPath, setCopiedPath] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState<boolean>(false);
+  const copiedTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (copiedTimeoutRef.current) {
+      clearTimeout(copiedTimeoutRef.current);
+    }
+  }, []);
 
   const catalogResults = remoteResults.filter(
     (r) => r.location === 'remote_catalog' || r.remote_source === 'to_be_downloaded'
@@ -79,7 +86,13 @@ export const SearchTab: React.FC = () => {
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     setCopiedPath(text);
-    setTimeout(() => setCopiedPath(null), 2000);
+    if (copiedTimeoutRef.current) {
+      clearTimeout(copiedTimeoutRef.current);
+    }
+    copiedTimeoutRef.current = setTimeout(() => {
+      setCopiedPath(null);
+      copiedTimeoutRef.current = null;
+    }, 2000);
   };
 
   const formatBytes = (bytes?: number) => {

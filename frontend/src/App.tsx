@@ -38,53 +38,110 @@ export const App: React.FC = () => {
   const [showDataFilesModal, setShowDataFilesModal] = useState(false);
   const [driveToast, setDriveToast] = useState<{ type: 'connected' | 'disconnected'; message: string } | null>(null);
   const prevDriveConnected = React.useRef<boolean | null>(null);
+  const statusRequestRef = React.useRef<AbortController | null>(null);
+  const driveRequestRef = React.useRef<AbortController | null>(null);
+  const drivePollInFlightRef = React.useRef(false);
+  const toastTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const shutdownTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showDriveToast = (toast: { type: 'connected' | 'disconnected'; message: string }) => {
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
+    setDriveToast(toast);
+    toastTimeoutRef.current = setTimeout(() => {
+      setDriveToast(null);
+      toastTimeoutRef.current = null;
+    }, 5000);
+  };
 
   const fetchStatus = async () => {
+    statusRequestRef.current?.abort();
+    const controller = new AbortController();
+    statusRequestRef.current = controller;
     setLoadingStatus(true);
     try {
-      const res = await fetch('/api/status');
+      const res = await fetch('/api/status', { signal: controller.signal });
       if (res.ok) {
         const data = await res.json();
         setStatus(data);
       }
     } catch (err) {
-      console.error(err);
+      if (!(err instanceof DOMException && err.name === 'AbortError')) {
+        console.error(err);
+      }
     } finally {
-      setLoadingStatus(false);
+      if (statusRequestRef.current === controller) {
+        statusRequestRef.current = null;
+        setLoadingStatus(false);
+      }
     }
   };
 
   useEffect(() => {
     fetchStatus();
+    return () => {
+      statusRequestRef.current?.abort();
+      statusRequestRef.current = null;
+    };
   }, []);
 
   useEffect(() => {
     const checkDrive = async () => {
+      if (drivePollInFlightRef.current) return;
+      drivePollInFlightRef.current = true;
+      driveRequestRef.current?.abort();
+      const controller = new AbortController();
+      driveRequestRef.current = controller;
       try {
-        const res = await fetch('/api/status/drive');
+        const res = await fetch('/api/status/drive', { signal: controller.signal });
         if (res.ok) {
           const data = await res.json();
           const isMounted = data.drive_mounted;
           if (prevDriveConnected.current !== null && prevDriveConnected.current !== isMounted) {
-            setDriveToast({
+            showDriveToast({
               type: isMounted ? 'connected' : 'disconnected',
               message: isMounted
                 ? `Hard Drive (${data.drive_letter}) connected and ready!`
                 : `Hard Drive (${data.drive_letter}) was disconnected!`,
             });
-            setTimeout(() => setDriveToast(null), 5000);
             fetchStatus();
           }
           prevDriveConnected.current = isMounted;
         }
-      } catch {
-        // Silent fail - polling
+      } catch (err) {
+        if (!(err instanceof DOMException && err.name === 'AbortError')) {
+          console.error(err);
+        }
+      } finally {
+        if (driveRequestRef.current === controller) {
+          driveRequestRef.current = null;
+        }
+        drivePollInFlightRef.current = false;
       }
     };
 
     checkDrive();
     const interval = setInterval(checkDrive, 8000);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      driveRequestRef.current?.abort();
+      driveRequestRef.current = null;
+      drivePollInFlightRef.current = false;
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+        toastTimeoutRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => () => {
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
+    if (shutdownTimeoutRef.current) {
+      clearTimeout(shutdownTimeoutRef.current);
+    }
   }, []);
 
   const handleRescanAll = async () => {
@@ -107,16 +164,13 @@ export const App: React.FC = () => {
       const res = await fetch('/api/status/drive/eject', { method: 'POST' });
       const data = await res.json();
       if (!res.ok) {
-        setDriveToast({ type: 'disconnected', message: data.detail || 'Unable to eject the drive.' });
-        setTimeout(() => setDriveToast(null), 5000);
+        showDriveToast({ type: 'disconnected', message: data.detail || 'Unable to eject the drive.' });
         return;
       }
-      setDriveToast({ type: 'disconnected', message: `${data.message} You can now disconnect it.` });
-      setTimeout(() => setDriveToast(null), 5000);
+      showDriveToast({ type: 'disconnected', message: `${data.message} You can now disconnect it.` });
       await fetchStatus();
     } catch {
-      setDriveToast({ type: 'disconnected', message: 'Unable to contact the app to eject the drive.' });
-      setTimeout(() => setDriveToast(null), 5000);
+      showDriveToast({ type: 'disconnected', message: 'Unable to contact the app to eject the drive.' });
     }
   };
 
@@ -125,16 +179,17 @@ export const App: React.FC = () => {
       const res = await fetch('/api/shutdown', { method: 'POST' });
       const data = await res.json();
       if (!res.ok) {
-        setDriveToast({ type: 'disconnected', message: data.detail || 'Unable to shut down the app.' });
-        setTimeout(() => setDriveToast(null), 5000);
+        showDriveToast({ type: 'disconnected', message: data.detail || 'Unable to shut down the app.' });
         return;
       }
       setDriveToast({ type: 'disconnected', message: `${data.message} You can now eject the drive.` });
-      setTimeout(() => window.close(), 500);
+      shutdownTimeoutRef.current = setTimeout(() => {
+        window.close();
+        shutdownTimeoutRef.current = null;
+      }, 500);
     } catch {
       // The server may close the connection immediately after accepting shutdown.
-      setDriveToast({ type: 'disconnected', message: 'File Manager has shut down. You can now eject the drive.' });
-      setTimeout(() => setDriveToast(null), 5000);
+      showDriveToast({ type: 'disconnected', message: 'File Manager has shut down. You can now eject the drive.' });
     }
   };
 
