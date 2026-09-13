@@ -13,6 +13,17 @@ except ImportError:
 
 
 TOKEN_PATTERN = re.compile(r"[\w]+", re.UNICODE)
+ARABIC_MARKS = re.compile(r"[\u0610-\u061a\u064b-\u065f\u0670\u06d6-\u06ed]")
+ARABIC_VARIANTS = str.maketrans({
+    "أ": "ا",
+    "إ": "ا",
+    "آ": "ا",
+    "ٱ": "ا",
+    "ى": "ي",
+    "ئ": "ي",
+    "ؤ": "و",
+    "ة": "ه",
+})
 
 
 def is_excluded_local_entry(file_entry: dict[str, Any]) -> bool:
@@ -31,7 +42,7 @@ def search_file_index(
     if not query:
         return []
 
-    query_normalized = _normalize(query)
+    query_normalized = normalize_search_text(query)
     query_tokens = _tokenize(query)
     results = []
 
@@ -44,7 +55,7 @@ def search_file_index(
         ):
             continue
         searchable_text = f"{file_entry.get('name', '')} {folder} {path}"
-        score, matched_by = _score_match(query_normalized, query_tokens, searchable_text)
+        score, matched_by = score_search_match(query_normalized, query_tokens, searchable_text)
 
         if score <= 0:
             continue
@@ -58,12 +69,12 @@ def search_file_index(
     return sort_files(results, sort_by=sort_by, descending=descending)[:limit]
 
 
-def _score_match(
+def score_search_match(
     query_normalized: str,
     query_tokens: list[str],
     searchable_text: str,
 ) -> tuple[float, str]:
-    text_normalized = _normalize(searchable_text)
+    text_normalized = normalize_search_text(searchable_text)
     text_tokens = _tokenize(searchable_text)
 
     if query_normalized == text_normalized:
@@ -111,9 +122,10 @@ def _token_score(query_tokens: list[str], text_tokens: list[str]) -> float:
     return matched_ratio + coverage_bonus
 
 
-def _normalize(value: str) -> str:
+def normalize_search_text(value: str) -> str:
     return " ".join(_tokenize(value))
 
 
 def _tokenize(value: str) -> list[str]:
-    return TOKEN_PATTERN.findall(value.casefold())
+    normalized = ARABIC_MARKS.sub("", value.casefold().translate(ARABIC_VARIANTS))
+    return TOKEN_PATTERN.findall(normalized)

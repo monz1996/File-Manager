@@ -12,14 +12,15 @@ import {
   Search,
   FolderPlus,
 } from 'lucide-react';
-import type { OldGoldDiffResponse, OldGoldDiffPackage, SystemStatus } from '../../types';
+import type { CurrentOperation, OldGoldDiffResponse, OldGoldDiffPackage, SystemStatus } from '../../types';
 
 interface DriveSyncTabProps {
   status: SystemStatus | null;
   onOperationDone?: () => void;
+  currentOperation: CurrentOperation | null;
 }
 
-export const DriveSyncTab: React.FC<DriveSyncTabProps> = ({ status, onOperationDone }) => {
+export const DriveSyncTab: React.FC<DriveSyncTabProps> = ({ status, onOperationDone, currentOperation }) => {
   const [diff, setDiff] = useState<OldGoldDiffResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState<string | null>(null);
@@ -34,6 +35,7 @@ export const DriveSyncTab: React.FC<DriveSyncTabProps> = ({ status, onOperationD
   const [lastSelectedIdx, setLastSelectedIdx] = useState<number | null>(null);
 
   const isDriveAvailable = status?.connected.remote_drive.available ?? false;
+  const driveOperation = currentOperation?.type === 'drive_sync' ? currentOperation : null;
 
   const fetchDiff = async (refresh: boolean = false): Promise<OldGoldDiffResponse | null> => {
     setLoading(true);
@@ -56,6 +58,14 @@ export const DriveSyncTab: React.FC<DriveSyncTabProps> = ({ status, onOperationD
   useEffect(() => {
     fetchDiff(true);
   }, []);
+
+  useEffect(() => {
+    if (!driveOperation) {
+      setSyncing(null);
+    } else if (driveOperation.label === 'Syncing all packages') {
+      setSyncing('all');
+    }
+  }, [driveOperation]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -96,8 +106,10 @@ export const DriveSyncTab: React.FC<DriveSyncTabProps> = ({ status, onOperationD
       const data = await res.json();
       if (res.ok) {
         setFeedback({
-          type: 'success',
-          message: dryRun
+          type: data.status === 'stopped' ? 'error' : 'success',
+          message: data.status === 'stopped'
+            ? 'Operation stopped. Files already copied remain on the remote drive.'
+            : dryRun
             ? `[Dry Run Simulation] Planned ${data.copied_count || 0} copies, ${data.updated_count || 0} updates, ${data.deleted_count || 0} deletions.`
             : `Sync completed! Copied: ${data.copied_count || 0}, Updated: ${data.updated_count || 0}, Deleted: ${data.deleted_count || 0}.`,
           result: data,
@@ -289,11 +301,11 @@ export const DriveSyncTab: React.FC<DriveSyncTabProps> = ({ status, onOperationD
 
         <button
           onClick={() => handleSync(null, true)}
-          disabled={!isDriveAvailable || syncing !== null || packages.length === 0}
+          disabled={!isDriveAvailable || currentOperation !== null || packages.length === 0}
           className="flex items-center gap-2 px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold shadow-md shadow-emerald-500/20 transition cursor-pointer disabled:opacity-40"
         >
           <FolderSync className={`w-4 h-4 ${syncing === 'all' ? 'animate-spin' : ''}`} />
-          <span>{syncing === 'all' ? 'Syncing All...' : dryRun ? 'Test Sync All (Dry Run)' : 'Sync All Packages to D:'}</span>
+          <span>{driveOperation?.label === 'Syncing all packages' ? 'Syncing All...' : dryRun ? 'Test Sync All (Dry Run)' : 'Sync All Packages to D:'}</span>
         </button>
       </div>
 
@@ -352,7 +364,7 @@ export const DriveSyncTab: React.FC<DriveSyncTabProps> = ({ status, onOperationD
       <div className="space-y-3">
         {filteredPackages.map((pkg) => {
           const hasDiff = pkg.only_local_count > 0 || pkg.only_remote_count > 0;
-          const isCurrentSyncing = syncing === pkg.package;
+          const isCurrentSyncing = driveOperation?.label === `Syncing ${pkg.package}`;
 
           return (
             <div
@@ -423,7 +435,7 @@ export const DriveSyncTab: React.FC<DriveSyncTabProps> = ({ status, onOperationD
 
                   <button
                     onClick={() => handleSync(pkg.package, false)}
-                    disabled={!isDriveAvailable || syncing !== null}
+                    disabled={!isDriveAvailable || currentOperation !== null}
                     className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-500 hover:bg-indigo-400 text-white shadow-md shadow-indigo-500/20 transition cursor-pointer disabled:opacity-40"
                   >
                     <FolderSync className={`w-3.5 h-3.5 ${isCurrentSyncing ? 'animate-spin' : ''}`} />

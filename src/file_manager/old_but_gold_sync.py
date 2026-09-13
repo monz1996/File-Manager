@@ -3,7 +3,8 @@ from __future__ import annotations
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from threading import Event
+from typing import Any, Callable
 
 try:
     from .old_but_gold_compare import compare_package_content
@@ -19,6 +20,8 @@ def sync_package_to_remote(
     remote_root: Path,
     delete_remote_extra: bool = False,
     dry_run: bool = False,
+    stop_event: Event | None = None,
+    on_progress: Callable[[int, int, str], None] | None = None,
 ) -> dict[str, Any]:
     local_package = local_root / package_name
     remote_package = remote_root / package_name
@@ -39,7 +42,13 @@ def sync_package_to_remote(
         return result
 
     if remote_package.exists():
-        comparison = compare_package_content(package_name, local_root, remote_root)
+        comparison = compare_package_content(
+            package_name,
+            local_root,
+            remote_root,
+            should_stop=stop_event.is_set if stop_event else None,
+            on_progress=on_progress,
+        )
     else:
         comparison = {
             "different_count": 0,
@@ -57,12 +66,19 @@ def sync_package_to_remote(
         "only_remote_count": comparison["only_remote_count"],
     }
 
+    if comparison.get("status") == "stopped":
+        result["status"] = "stopped"
+        return result
+
     if not dry_run:
         remote_package.mkdir(parents=True, exist_ok=True)
 
     _create_missing_directories(local_package, remote_package, result, dry_run)
 
     for relative_path in comparison["only_local"]:
+        if stop_event is not None and stop_event.is_set():
+            result["status"] = "stopped"
+            return result
         _copy_file(
             local_package / relative_path,
             remote_package / relative_path,
@@ -73,6 +89,9 @@ def sync_package_to_remote(
         )
 
     for relative_path in comparison["different"]:
+        if stop_event is not None and stop_event.is_set():
+            result["status"] = "stopped"
+            return result
         _copy_file(
             local_package / relative_path,
             remote_package / relative_path,
@@ -83,6 +102,9 @@ def sync_package_to_remote(
         )
 
     if delete_remote_extra:
+        if stop_event is not None and stop_event.is_set():
+            result["status"] = "stopped"
+            return result
         _delete_remote_extras(
             local_package,
             remote_package,
@@ -101,6 +123,8 @@ def sync_all_to_remote(
     remote_root: Path,
     delete_remote_extra: bool = False,
     dry_run: bool = False,
+    stop_event: Event | None = None,
+    on_progress: Callable[[int, int, str], None] | None = None,
 ) -> dict[str, Any]:
     result = {
         "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
@@ -133,12 +157,17 @@ def sync_all_to_remote(
     )
 
     for package_name in package_names:
+        if stop_event is not None and stop_event.is_set():
+            result["status"] = "stopped"
+            return result
         package_result = sync_package_to_remote(
             package_name,
             local_root,
             remote_root,
             delete_remote_extra=delete_remote_extra,
             dry_run=dry_run,
+            stop_event=stop_event,
+            on_progress=on_progress,
         )
         result["packages"].append(package_result)
         result["copied_count"] += package_result["copied_count"]

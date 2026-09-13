@@ -9,6 +9,7 @@ import {
   SpellCheck,
   GitCompare,
   FileType2,
+  Play,
 } from 'lucide-react';
 import { Header } from './components/Header';
 import { DataFilesModal } from './components/DataFilesModal';
@@ -21,10 +22,11 @@ import { ByteCompareTab } from './components/Tabs/ByteCompareTab';
 import { SearchTab } from './components/Tabs/SearchTab';
 import { RemoteCatalogTab } from './components/Tabs/RemoteCatalogTab';
 import { NameAuditTab } from './components/Tabs/NameAuditTab';
-import type { SystemStatus } from './types';
+import { EntertainmentTab } from './components/Tabs/EntertainmentTab';
+import type { CurrentOperation, SystemStatus } from './types';
 
 interface TabItem {
-  id: 'changes' | 'videos' | 'file_types' | 'downloads' | 'drive' | 'byte_compare' | 'search' | 'remote_catalog' | 'name_audit';
+  id: 'changes' | 'videos' | 'entertainment' | 'file_types' | 'downloads' | 'drive' | 'byte_compare' | 'search' | 'remote_catalog' | 'name_audit';
   label: string;
   icon: React.ReactNode;
   badge?: string;
@@ -37,6 +39,7 @@ export const App: React.FC = () => {
   const [loadingStatus, setLoadingStatus] = useState(false);
   const [showDataFilesModal, setShowDataFilesModal] = useState(false);
   const [driveToast, setDriveToast] = useState<{ type: 'connected' | 'disconnected'; message: string } | null>(null);
+  const [currentOperation, setCurrentOperation] = useState<CurrentOperation | null>(null);
   const prevDriveConnected = React.useRef<boolean | null>(null);
   const statusRequestRef = React.useRef<AbortController | null>(null);
   const driveRequestRef = React.useRef<AbortController | null>(null);
@@ -83,6 +86,28 @@ export const App: React.FC = () => {
     return () => {
       statusRequestRef.current?.abort();
       statusRequestRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const pollOperation = async () => {
+      try {
+        const res = await fetch('/api/operations/current');
+        if (res.ok && !cancelled) {
+          const data = await res.json();
+          setCurrentOperation(data.operation || null);
+        }
+      } catch (err) {
+        if (!cancelled) console.error(err);
+      }
+    };
+
+    pollOperation();
+    const interval = setInterval(pollOperation, 1000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
     };
   }, []);
 
@@ -178,6 +203,14 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleStopOperation = async () => {
+    try {
+      await fetch('/api/operations/stop', { method: 'POST' });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const tabs: TabItem[] = [
     {
       id: 'changes',
@@ -190,6 +223,12 @@ export const App: React.FC = () => {
       label: 'Video Analytics',
       icon: <Film className="w-4 h-4" />,
       badge: status?.data_files.video_metadata.records_count ? `${status.data_files.video_metadata.records_count} vids` : undefined,
+    },
+    {
+      id: 'entertainment',
+      label: 'Entertainment',
+      icon: <Play className="w-4 h-4" />,
+      badgeColor: 'orange',
     },
     {
       id: 'file_types',
@@ -243,6 +282,28 @@ export const App: React.FC = () => {
         onShutdownApp={handleShutdownApp}
       />
 
+      {currentOperation && (
+        <div className="mx-3 sm:mx-4 lg:mx-5 mt-4 p-3 rounded-xl bg-amber-500/10 border border-amber-400/30 flex items-center justify-between gap-3 text-xs">
+          <div className="min-w-0">
+            <span className="font-bold text-amber-200">{currentOperation.label}</span>
+            <span className="text-amber-100/80 ml-2">
+              {currentOperation.phase === 'byte_compare' ? 'Byte-by-byte comparison in progress' : currentOperation.phase}
+              {currentOperation.total > 0 ? ` (${currentOperation.processed}/${currentOperation.total})` : ''}
+            </span>
+            {currentOperation.current_path && (
+              <span className="block truncate text-slate-300 mt-0.5">{currentOperation.current_path}</span>
+            )}
+          </div>
+          <button
+            onClick={handleStopOperation}
+            disabled={currentOperation.stop_requested}
+            className="shrink-0 px-3 py-1.5 rounded-lg bg-rose-500 hover:bg-rose-400 text-white font-bold disabled:opacity-50"
+          >
+            {currentOperation.stop_requested ? 'Stopping...' : 'Stop Operation'}
+          </button>
+        </div>
+      )}
+
       <div className="w-full max-w-none mx-auto px-3 sm:px-4 lg:px-5 py-5 flex-1 flex flex-col space-y-5">
         <div className="flex items-center gap-1.5 overflow-x-auto pb-2 border-b border-blue-500/30 scrollbar-none">
           {tabs.map((tab) => {
@@ -284,15 +345,20 @@ export const App: React.FC = () => {
         </div>
 
         <main className="flex-1 w-full">
-          {activeTab === 'changes' && <ChangesTab />}
-          {activeTab === 'videos' && <VideoAnalyticsTab />}
-          {activeTab === 'file_types' && <FileTypesTab />}
-          {activeTab === 'downloads' && <DownloadsSyncTab onOperationDone={fetchStatus} />}
-          {activeTab === 'drive' && <DriveSyncTab status={status} onOperationDone={fetchStatus} />}
-          {activeTab === 'byte_compare' && <ByteCompareTab />}
-          {activeTab === 'search' && <SearchTab />}
-          {activeTab === 'remote_catalog' && <RemoteCatalogTab />}
-          {activeTab === 'name_audit' && <NameAuditTab onOperationDone={fetchStatus} />}
+          <div className={activeTab === 'changes' ? '' : 'hidden'}><ChangesTab /></div>
+          <div className={activeTab === 'videos' ? '' : 'hidden'}><VideoAnalyticsTab /></div>
+          <div className={activeTab === 'entertainment' ? '' : 'hidden'}><EntertainmentTab /></div>
+          <div className={activeTab === 'file_types' ? '' : 'hidden'}><FileTypesTab /></div>
+          <div className={activeTab === 'downloads' ? '' : 'hidden'}><DownloadsSyncTab onOperationDone={fetchStatus} /></div>
+          <div className={activeTab === 'drive' ? '' : 'hidden'}>
+            <DriveSyncTab status={status} onOperationDone={fetchStatus} currentOperation={currentOperation} />
+          </div>
+          <div className={activeTab === 'byte_compare' ? '' : 'hidden'}>
+            <ByteCompareTab currentOperation={currentOperation} status={status} />
+          </div>
+          <div className={activeTab === 'search' ? '' : 'hidden'}><SearchTab /></div>
+          <div className={activeTab === 'remote_catalog' ? '' : 'hidden'}><RemoteCatalogTab /></div>
+          <div className={activeTab === 'name_audit' ? '' : 'hidden'}><NameAuditTab onOperationDone={fetchStatus} /></div>
         </main>
       </div>
 

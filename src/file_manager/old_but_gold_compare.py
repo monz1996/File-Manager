@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 try:
     from .path_visibility import is_hidden_or_system
@@ -14,6 +14,8 @@ def compare_arbitrary_paths(
     local_path: Path,
     remote_path: Path,
     chunk_size: int = 1024 * 1024,
+    should_stop: Callable[[], bool] | None = None,
+    on_progress: Callable[[int, int, str], None] | None = None,
 ) -> dict[str, Any]:
     """Byte-by-byte comparison of two arbitrary directories (not limited to packages)."""
     result = {
@@ -46,10 +48,18 @@ def compare_arbitrary_paths(
     result["only_remote_count"] = len(result["only_remote"])
 
     for relative_path in common_files:
+        if should_stop is not None and should_stop():
+            result["status"] = "stopped"
+            return result
         local_file = local_path / relative_path
         remote_file = remote_path / relative_path
-        is_same = _same_file_content(local_file, remote_file, chunk_size)
+        is_same = _same_file_content(local_file, remote_file, chunk_size, should_stop)
+        if is_same is None:
+            result["status"] = "stopped"
+            return result
         result["compared_count"] += 1
+        if on_progress is not None:
+            on_progress(result["compared_count"], len(common_files), relative_path)
 
         if is_same:
             result["same_count"] += 1
@@ -106,6 +116,8 @@ def compare_package_content(
     local_root: Path,
     remote_root: Path,
     chunk_size: int = 1024 * 1024,
+    should_stop: Callable[[], bool] | None = None,
+    on_progress: Callable[[int, int, str], None] | None = None,
 ) -> dict[str, Any]:
     local_package = local_root / package_name
     remote_package = remote_root / package_name
@@ -141,10 +153,18 @@ def compare_package_content(
     result["only_remote_count"] = len(result["only_remote"])
 
     for relative_path in common_files:
+        if should_stop is not None and should_stop():
+            result["status"] = "stopped"
+            return result
         local_file = local_package / relative_path
         remote_file = remote_package / relative_path
-        is_same = _same_file_content(local_file, remote_file, chunk_size)
+        is_same = _same_file_content(local_file, remote_file, chunk_size, should_stop)
+        if is_same is None:
+            result["status"] = "stopped"
+            return result
         result["compared_count"] += 1
+        if on_progress is not None:
+            on_progress(result["compared_count"], len(common_files), relative_path)
 
         if is_same:
             result["same_count"] += 1
@@ -197,12 +217,19 @@ def _relative_file_paths(path: Path) -> set[str]:
     }
 
 
-def _same_file_content(local_file: Path, remote_file: Path, chunk_size: int) -> bool:
+def _same_file_content(
+    local_file: Path,
+    remote_file: Path,
+    chunk_size: int,
+    should_stop: Callable[[], bool] | None = None,
+) -> bool | None:
     if local_file.stat().st_size != remote_file.stat().st_size:
         return False
 
     with local_file.open("rb") as left, remote_file.open("rb") as right:
         while True:
+            if should_stop is not None and should_stop():
+                return None
             left_chunk = left.read(chunk_size)
             right_chunk = right.read(chunk_size)
 

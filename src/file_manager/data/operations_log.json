@@ -1,17 +1,159 @@
 {
     "operations": [
         {
-            "id": "4a548543-dbe1-4e2c-ab4e-d841b91569ff",
-            "timestamp": "2026-09-13T13:23:04+03:00",
+            "id": "d3f15c7e-b4f5-473c-be6b-968872a9ced9",
+            "timestamp": "2026-09-13T20:47:29+03:00",
+            "action_type": "drive_sync",
+            "source": "C:\\Users\\minas\\Desktop\\old but gold\\Old Music",
+            "destination": "D:\\old but gold\\Old Music",
+            "description": "Synced package 'Old Music' to remote drive (Copied: 0, Updated: 0, Deleted: 1)",
+            "details": {
+                "generated_at": "2026-09-13T20:47:28+03:00",
+                "package": "Old Music",
+                "local_package": "C:\\Users\\minas\\Desktop\\old but gold\\Old Music",
+                "remote_package": "D:\\old but gold\\Old Music",
+                "local_available": true,
+                "remote_available": true,
+                "delete_remote_extra": true,
+                "dry_run": false,
+                "status": "synced",
+                "comparison": {
+                    "different_count": 0,
+                    "only_local_count": 0,
+                    "only_remote_count": 1
+                },
+                "copied_count": 0,
+                "updated_count": 0,
+                "created_directory_count": 0,
+                "deleted_count": 1,
+                "copied": [],
+                "updated": [],
+                "created_directories": [],
+                "deleted": [
+                    "Abou Elleef Kolloh Beynafsen أبو الليف كله بينفسن - Copy.mp3"
+                ]
+            },
+            "status": "completed"
+        },
+        {
+            "id": "03ce8495-87d6-4e07-a71f-dcdf4226c16a",
+            "timestamp": "2026-09-13T20:46:53+03:00",
+            "action_type": "drive_sync",
+            "source": "C:\\Users\\minas\\Desktop\\old but gold\\Old Music",
+            "destination": "D:\\old but gold\\Old Music",
+            "description": "Synced package 'Old Music' to remote drive (Copied: 1, Updated: 0, Deleted: 0)",
+            "details": {
+                "generated_at": "2026-09-13T20:46:34+03:00",
+                "package": "Old Music",
+                "local_package": "C:\\Users\\minas\\Desktop\\old but gold\\Old Music",
+                "remote_package": "D:\\old but gold\\Old Music",
+                "local_available": true,
+                "remote_available": true,
+                "delete_remote_extra": true,
+                "dry_run": false,
+                "status": "synced",
+                "comparison": {
+                    "different_count": 0,
+                    "only_local_count": 1,
+                    "only_remote_count": 0
+                },
+                "copied_count": 1,
+                "updated_count": 0,
+                "created_directory_count": 0,
+                "deleted_count": 0,
+                "copied": [
+                    "Abou Elleef Kolloh Beynafsen أبو الليف كله بينفسن - Copy.mp3"
+                ],
+                "updated": [],
+                "created_directories": [],
+                "deleted": []
+            },
+            "status": "completed"
+        },
+        {
+            "id": "f34b5a7f-6059-40a4-8ab6-56d51201a7bd",
+            "timestamp": "2026-09-13T20:26:55+03:00",
             "action_type": "drive_sync",
             "source": "C:\\Users\\minas\\Desktop\\old but gold\\books",
             "destination": "D:\\old but gold\\books",
-            "description": "Updated remote package 'books' (copied 1, deleted 0).",
+            "description": "Synced package 'books' to remote drive (Copied: 0, Updated: 0, Deleted: 0)",
             "details": {
-                "copied": [
+                "generated_at": "2026-09-13T20:26:55+03:00",
+                "package": "books",
+                "local_package": "C:\\Users\\minas\\Desktop\\old but gold\\books",
+                "remote_package": "D:\\old but gold\\books",
+                "local_available": true,
+                "remote_available": true,
+                "delete_remote_extra": true,
+                "dry_run": false,
+                "status": "synced",
+                "comparison": {
+                    "different_count": 0,
+                    "only_local_count": 0,
+                    "only_remote_count": 0
+                },
+                "copied_count": 0,
+                "updated_count": 0,
+                "created_directory_count": 0,
+                "deleted_count": 0,
+                "copied": [],
+                "updated": [],
+                "created_directories": [],
+                "deleted": []
+            },
+            "status": "completed"
+        },
+        {
+            "id": "f726c8ef-7604-497c-9e60-fb364f47fc8d",
+            "timestamp": "2026-09-13T20:26:45+03:00",
+            "action_type": "drive_sync",
+            "source": "C:\\Users\\minas\\Desktop\\old but gold\\books",
+            "destination": "D:\\old but gold\\books",
+            "description": "Synced package 'books' to remote drive (Copied: 0, Updated: 1, Deleted: 0)",
+            "details": {
+                "generated_at": "2026-09-13T20:26:44+03:00",
+                "package": "books",
+                "local_package": "C:\\Users\\minas\\Desktop\\old but gold\\books",
+                "remote_package": "D:\\old but gold\\books",
+                "local_available": true,
+                "remote_available": true,
+                "delete_remote_extra": true,
+                "dry_run": false,
+                "status": "synced",
+                "comparison": {
+                    "different_count": 1,
+                    "only_local_count": 0,
+                    "only_remote_count": 0
+                },
+                "copied_count": 0,
+                "updated_count": 1,
+                "created_directory_count": 0,
+                "deleted_count": 0,
+                "copied": [],
+                "updated": [
                     "dww.txt"
                 ],
-                "copied_count": 1,
+                "created_directories": [],
+                "deleted": []
+            },
+            "status": "completed"
+        },
+        {
+            "id": "2d4db3e8-b0b5-4cc2-a4c2-35c722292861",
+            "timestamp": "2026-09-13T20:02:24+03:00",
+            "action_type": "drive_sync",
+            "source": "C:\\Users\\minas\\Desktop\\old but gold\\videos",
+            "destination": "D:\\old but gold\\videos",
+            "description": "Updated remote package 'videos' (copied 5, deleted 0).",
+            "details": {
+                "copied": [
+                    "Elden Ring/Elden Ring Elden Beast attack.mp4",
+                    "Elden Ring/ELDEN RING elden beast grab attack.mp4",
+                    "Elden Ring/Elden Ring Lore_ What is the Elden Beast_.mp4",
+                    "English/Prince Zuko's Destiny _ Avatar_ The Last Airbender.mp4",
+                    "long videos/Why Zuko's Story is the Defining Element of Avatar.mp4"
+                ],
+                "copied_count": 5,
                 "deleted": [],
                 "deleted_count": 0,
                 "updated_count": 0
@@ -19,50 +161,151 @@
             "status": "completed"
         },
         {
-            "id": "0990373d-9989-428e-958d-082ad9007218",
-            "timestamp": "2026-09-13T13:22:20+03:00",
+            "id": "077b58e4-9c32-4642-bb27-9cdf61dc0bed",
+            "timestamp": "2026-09-13T19:45:23+03:00",
             "action_type": "drive_sync",
-            "source": "C:\\Users\\minas\\Desktop\\old but gold\\books",
-            "destination": "D:\\old but gold\\books",
-            "description": "Updated remote package 'books' (copied 0, deleted 1).",
+            "source": "C:\\Users\\minas\\Desktop\\old but gold\\Songs",
+            "destination": "D:\\old but gold\\Songs",
+            "description": "Updated remote package 'Songs' (copied 2, deleted 0).",
             "details": {
-                "copied": [],
-                "copied_count": 0,
+                "copied": [
+                    "Arabic/Rasha Sharnouby - Ahlamna _ اغنية فيلم _بنات ثانوي_ احلامنا (لسة صغيرين) بصوت رشا الشرنوبي-196927780.mp3",
+                    "Arabic/الغزالة رايقة بصوت فايا يوناني شاهد الاداء الرائع.mp4"
+                ],
+                "copied_count": 2,
+                "deleted": [],
+                "deleted_count": 0,
+                "updated_count": 0
+            },
+            "status": "completed"
+        },
+        {
+            "id": "e131f860-3ced-470b-b51b-9055fa33388d",
+            "timestamp": "2026-09-13T19:43:56+03:00",
+            "action_type": "drive_sync",
+            "source": "C:\\Users\\minas\\Desktop\\old but gold\\pictures",
+            "destination": "D:\\old but gold\\pictures",
+            "description": "Synced package 'pictures' to remote drive (Copied: 42, Updated: 0, Deleted: 40)",
+            "details": {
+                "generated_at": "2026-09-13T19:43:54+03:00",
+                "package": "pictures",
+                "local_package": "C:\\Users\\minas\\Desktop\\old but gold\\pictures",
+                "remote_package": "D:\\old but gold\\pictures",
+                "local_available": true,
+                "remote_available": true,
+                "delete_remote_extra": true,
+                "dry_run": false,
+                "status": "synced",
+                "comparison": {
+                    "different_count": 0,
+                    "only_local_count": 42,
+                    "only_remote_count": 40
+                },
+                "copied_count": 42,
+                "updated_count": 0,
+                "created_directory_count": 0,
+                "deleted_count": 40,
+                "copied": [
+                    "Anime Characters.jpg",
+                    "Anime Pic.jpg",
+                    "Austeralia FireHawks.jpg",
+                    "Avatar Aang.png",
+                    "Ave Maria.PNG",
+                    "Bloodborne.jpg",
+                    "Conan Case Closed Pic.jpg",
+                    "Detective Conan Case Closed.jpg",
+                    "Don't cry your perfect Arcane.jpg",
+                    "don't cum inside.jpg",
+                    "Exodia.png",
+                    "Farmer Joke.jpg",
+                    "Glados Portal 2.jpg",
+                    "Hollow Knight.JPG",
+                    "Homosexual Joke.JPG",
+                    "How I met your mother Ted Alone.JPG",
+                    "I hate attractive people.JPG",
+                    "Jimmy ITI.PNG",
+                    "Lord Byron She walks in beauty.jpeg",
+                    "Me as a Girl Mina.jpg",
+                    "Night flight ST Fransisco.png",
+                    "not yet.jpg",
+                    "Portal 2 Addios Translation.jpg",
+                    "Portal 2 Ending comment.PNG",
+                    "Project GUC embeded systems.jpg",
+                    "Roomate Joke.jpg",
+                    "Saber and Yasser ITI.jpg",
+                    "Spiderman GreenGoblin Threesome Joke.jpg",
+                    "The Office Michael Scott Joke.jpg",
+                    "Viking King Ecbert.JPG",
+                    "Wild Tales Mina Bebawy.PNG",
+                    "WTF was that Emaratech.jpg",
+                    "Zoz Zeyad The last Supper.PNG",
+                    "ابليس خصمكم.PNG",
+                    "امسك يابن المتناكة.jpg",
+                    "ان جاع عدوك.jpg",
+                    "تسلم رجلك.PNG",
+                    "صفوة iti مندور.jpg",
+                    "فول الصين العظيم.JPG",
+                    "لا تردو علي الشر بشر.jpg",
+                    "ليكن كل انسان مسرعا.jpg",
+                    "مندور Margarette.jpg"
+                ],
+                "updated": [],
+                "created_directories": [],
                 "deleted": [
-                    "rwewe.txt"
-                ],
-                "deleted_count": 1,
-                "updated_count": 0
+                    "18f7e71f-0ad8-4365-8e0b-5d4f58f545f5.JPG",
+                    "21859837-6de8-4731-872d-a272d1618028.JPG",
+                    "248061142_419198352903834_7420702316947823171_n.jpg",
+                    "261456243_472429164333916_6569532131464205193_n.jpg",
+                    "285464.jpg",
+                    "291b18e3-56ce-4f58-8c85-cbdc131a55e2.jpg",
+                    "29585eb52cd1fa50eaf1ae4a735df17c.jpg",
+                    "339571553_254527020337918_5878016399402486798_n.jpg",
+                    "345232095_1394032471421269_6533037130974931692_n.jpg",
+                    "34c67b0f-caa8-4790-ae89-f8ff0078ea83.jpg",
+                    "34ee2daf-6707-473d-b542-d1cff3faf065.jpg",
+                    "42290c6d-c176-4939-bf64-9d32cdfd5467.jpg",
+                    "71f9fd7960273dcf7767b7c08edc7ea6.png",
+                    "88a1fa6d-bdec-4abf-9dde-041ccea0b925.jpg",
+                    "a2605626-3a81-4e12-b74d-1e1c53764efc.jpg",
+                    "a61389049268ce8c9ecc49d9_rw_1920.jpg",
+                    "Capture.PNG",
+                    "d592e10c2aa2892e2a60eb09433c331db231012e989f99f15d5542c249bbe326_1.jpg",
+                    "d5djh0y-ccff987e-b4e9-4ed5-8a2f-c952d91fe1b9.png",
+                    "Dont-cry.-Youre-perfect.jpg",
+                    "FB_IMG_1734987911780.jpg",
+                    "FB_IMG_1739652694642.jpg",
+                    "fcce5d42-d338-4317-9a9f-8d70dec79695.jpg",
+                    "images (24).jpeg",
+                    "images.jpg",
+                    "IMG-20241226-WA0016.jpg",
+                    "IMG-20250131-WA0007.jpg",
+                    "IMG-20260610-WA0014.jpg",
+                    "IMG_0858.JPG",
+                    "IMG_0927.JPG",
+                    "IMG_1136.JPG",
+                    "IMG_1439.JPG",
+                    "IMG_2539.PNG",
+                    "IMG_3300.PNG",
+                    "IMG_3754.PNG",
+                    "IMG_4090.PNG",
+                    "IMG_6506.PNG",
+                    "IMG_7153.PNG",
+                    "Screenshot (3).png",
+                    "صفوة ITI 🍷 20260627_130755.jpg"
+                ]
             },
             "status": "completed"
         },
         {
-            "id": "bbb2aa62-3c49-4b1e-93f3-db15af5df1e0",
-            "timestamp": "2026-09-13T13:22:13+03:00",
+            "id": "4dd89abc-6b37-417d-aac5-d186caddc254",
+            "timestamp": "2026-09-13T19:42:47+03:00",
             "action_type": "drive_sync",
-            "source": "C:\\Users\\minas\\Desktop\\old but gold\\books",
-            "destination": "D:\\old but gold\\books",
-            "description": "Updated remote package 'books' (copied 1, deleted 0).",
-            "details": {
-                "copied": [],
-                "copied_count": 0,
-                "deleted": [],
-                "deleted_count": 0,
-                "updated_count": 0
-            },
-            "status": "reverted",
-            "reverted_at": "2026-09-13T13:22:35+03:00"
-        },
-        {
-            "id": "c4bda5a1-ac1d-4464-a8c2-61092f124bd1",
-            "timestamp": "2026-09-13T13:19:43+03:00",
-            "action_type": "drive_sync",
-            "source": "C:\\Users\\minas\\Desktop\\old but gold\\books",
-            "destination": "D:\\old but gold\\books",
-            "description": "Updated remote package 'books' (copied 1, deleted 0).",
+            "source": "C:\\Users\\minas\\Desktop\\old but gold\\New folder",
+            "destination": "D:\\old but gold\\New folder",
+            "description": "Updated remote package 'New folder' (copied 1, deleted 0).",
             "details": {
                 "copied": [
-                    "rwewe.txt"
+                    "File-Manager.zip"
                 ],
                 "copied_count": 1,
                 "deleted": [],
@@ -72,107 +315,74 @@
             "status": "completed"
         },
         {
-            "id": "d849f392-1053-4b87-bbf5-69dbcb291b67",
-            "timestamp": "2026-09-13T13:18:49+03:00",
-            "action_type": "drive_sync",
-            "source": "C:\\Users\\minas\\Desktop\\old but gold\\books",
-            "destination": "D:\\old but gold\\books",
-            "description": "Updated remote package 'books' (copied 1, deleted 0).",
-            "details": {
-                "copied": [
-                    "rwewe.txt"
-                ],
-                "copied_count": 1,
-                "deleted": [],
-                "deleted_count": 0,
-                "updated_count": 0
-            },
-            "status": "completed"
-        },
-        {
-            "id": "ecfe23c2-5e1d-4415-a536-e985bddbc48b",
-            "timestamp": "2026-09-13T13:18:35+03:00",
-            "action_type": "drive_sync",
-            "source": "C:\\Users\\minas\\Desktop\\old but gold\\books",
-            "destination": "D:\\old but gold\\books",
-            "description": "Updated remote package 'books' (copied 1, deleted 0).",
-            "details": {
-                "copied": [
-                    "rwewe.txt"
-                ],
-                "copied_count": 1,
-                "deleted": [],
-                "deleted_count": 0,
-                "updated_count": 0
-            },
-            "status": "reverted",
-            "reverted_at": "2026-09-13T13:19:35+03:00"
-        },
-        {
-            "id": "833a1b62-022d-4c9f-b2d7-89599917ef2e",
-            "timestamp": "2026-09-13T13:17:49+03:00",
+            "id": "aa8d7fac-ed69-4bf4-a240-6f5290f99851",
+            "timestamp": "2026-09-13T19:37:05+03:00",
             "action_type": "download_move",
-            "source": "C:\\Users\\minas\\Downloads\\rwewe.txt",
-            "destination": "C:\\Users\\minas\\Desktop\\old but gold\\books\\rwewe.txt",
-            "description": "Moved 1 item(s) from Downloads to Local",
+            "source": "Downloads",
+            "destination": "C:\\Users\\minas\\Desktop\\old but gold",
+            "description": "Moved 7 item(s) from Downloads to Local",
             "details": {
                 "items": [
                     {
-                        "source": "C:\\Users\\minas\\Downloads\\rwewe.txt",
-                        "destination": "C:\\Users\\minas\\Desktop\\old but gold\\books\\rwewe.txt",
-                        "package": "books",
-                        "target_name": "rwewe.txt",
+                        "source": "C:\\Users\\minas\\Downloads\\_Elden Ring_ Attack - View Distance.mp4",
+                        "destination": "C:\\Users\\minas\\Desktop\\old but gold\\videos\\Elden Ring\\_Elden Ring_ Attack - View Distance.mp4",
+                        "package": "videos/Elden Ring",
+                        "target_name": "_Elden Ring_ Attack - View Distance.mp4",
                         "is_directory": false,
-                        "size_bytes": 0
+                        "size_bytes": 36824438
+                    },
+                    {
+                        "source": "C:\\Users\\minas\\Downloads\\ELDEN RING elden beast grab attack.mp4",
+                        "destination": "C:\\Users\\minas\\Desktop\\old but gold\\videos\\Elden Ring\\ELDEN RING elden beast grab attack.mp4",
+                        "package": "videos/Elden Ring",
+                        "target_name": "ELDEN RING elden beast grab attack.mp4",
+                        "is_directory": false,
+                        "size_bytes": 20356652
+                    },
+                    {
+                        "source": "C:\\Users\\minas\\Downloads\\Elden Ring Lore_ What is the Elden Beast_.mp4",
+                        "destination": "C:\\Users\\minas\\Desktop\\old but gold\\videos\\Elden Ring\\Elden Ring Lore_ What is the Elden Beast_.mp4",
+                        "package": "videos/Elden Ring",
+                        "target_name": "Elden Ring Lore_ What is the Elden Beast_.mp4",
+                        "is_directory": false,
+                        "size_bytes": 495718039
+                    },
+                    {
+                        "source": "C:\\Users\\minas\\Downloads\\Prince Zuko's Destiny _ Avatar_ The Last Airbender.mp4",
+                        "destination": "C:\\Users\\minas\\Desktop\\old but gold\\Songs\\English\\Prince Zuko's Destiny _ Avatar_ The Last Airbender.mp4",
+                        "package": "Songs/English",
+                        "target_name": "Prince Zuko's Destiny _ Avatar_ The Last Airbender.mp4",
+                        "is_directory": false,
+                        "size_bytes": 7992876
+                    },
+                    {
+                        "source": "C:\\Users\\minas\\Downloads\\Rasha Sharnouby - Ahlamna _ اغنية فيلم _بنات ثانوي_ احلامنا (لسة صغيرين) بصوت رشا الشرنوبي-196927780.mp3",
+                        "destination": "C:\\Users\\minas\\Desktop\\old but gold\\Songs\\Arabic\\Rasha Sharnouby - Ahlamna _ اغنية فيلم _بنات ثانوي_ احلامنا (لسة صغيرين) بصوت رشا الشرنوبي-196927780.mp3",
+                        "package": "Songs/Arabic",
+                        "target_name": "Rasha Sharnouby - Ahlamna _ اغنية فيلم _بنات ثانوي_ احلامنا (لسة صغيرين) بصوت رشا الشرنوبي-196927780.mp3",
+                        "is_directory": false,
+                        "size_bytes": 3437295
+                    },
+                    {
+                        "source": "C:\\Users\\minas\\Downloads\\Why Zuko's Story is the Defining Element of Avatar.mp4",
+                        "destination": "C:\\Users\\minas\\Desktop\\old but gold\\videos\\long videos\\Why Zuko's Story is the Defining Element of Avatar.mp4",
+                        "package": "videos/long videos",
+                        "target_name": "Why Zuko's Story is the Defining Element of Avatar.mp4",
+                        "is_directory": false,
+                        "size_bytes": 706422822
+                    },
+                    {
+                        "source": "C:\\Users\\minas\\Downloads\\الغزالة رايقة بصوت فايا يوناني شاهد الاداء الرائع.mp4",
+                        "destination": "C:\\Users\\minas\\Desktop\\old but gold\\Songs\\Arabic\\الغزالة رايقة بصوت فايا يوناني شاهد الاداء الرائع.mp4",
+                        "package": "Songs/Arabic",
+                        "target_name": "الغزالة رايقة بصوت فايا يوناني شاهد الاداء الرائع.mp4",
+                        "is_directory": false,
+                        "size_bytes": 12220499
                     }
                 ],
-                "count": 1
+                "count": 7
             },
             "status": "completed"
-        },
-        {
-            "id": "2e969fcb-e7e5-476d-a77e-7134178a28b4",
-            "timestamp": "2026-09-13T13:15:58+03:00",
-            "action_type": "download_move",
-            "source": "C:\\Users\\minas\\Downloads\\wwswd.mp4",
-            "destination": "C:\\Users\\minas\\Desktop\\old but gold\\books\\wwswd.mp4",
-            "description": "Moved 1 item(s) from Downloads to Local",
-            "details": {
-                "items": [
-                    {
-                        "source": "C:\\Users\\minas\\Downloads\\wwswd.mp4",
-                        "destination": "C:\\Users\\minas\\Desktop\\old but gold\\books\\wwswd.mp4",
-                        "package": "books",
-                        "target_name": "wwswd.mp4",
-                        "is_directory": false,
-                        "size_bytes": 139462571
-                    }
-                ],
-                "count": 1
-            },
-            "status": "reverted",
-            "reverted_at": "2026-09-13T13:16:11+03:00"
-        },
-        {
-            "id": "17d3b9a6-620b-4079-baab-b20d98028658",
-            "timestamp": "2026-09-13T13:10:32+03:00",
-            "action_type": "drive_sync",
-            "source": "C:\\Users\\minas\\Desktop\\old but gold\\books",
-            "destination": "D:\\old but gold\\books",
-            "description": "Updated remote package 'books' (copied 1, deleted 1).",
-            "details": {
-                "copied": [
-                    "dwwd.txt"
-                ],
-                "copied_count": 1,
-                "deleted": [
-                    "ewwe.txt"
-                ],
-                "deleted_count": 1,
-                "updated_count": 0
-            },
-            "status": "reverted",
-            "reverted_at": "2026-09-13T13:12:42+03:00"
         }
     ]
 }

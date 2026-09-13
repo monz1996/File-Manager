@@ -9,7 +9,9 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query
+from starlette.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -37,6 +39,7 @@ try:
     from .name_audit import audit_file_index_names
     from .old_but_gold_compare import compare_old_but_gold_paths, compare_package_content, compare_arbitrary_paths
     from .old_but_gold_sync import sync_all_to_remote, sync_package_to_remote
+    from .operation_manager import operation_manager
     from .operations import (
         load_operations_log,
         record_operation,
@@ -48,8 +51,9 @@ try:
     from .remote_catalog import build_remote_catalog
     from .remote_search import REMOTE_SECTIONS, REMOTE_SOURCES, search_remote_catalog
     from .scanner import scan_all_folders
-    from .search import is_excluded_local_entry, search_file_index
+    from .search import search_file_index
     from .video_metadata import collect_video_folder_metadata
+    from .entertainment import preview_path, scan_entertainment
 except ImportError:
     from config import load_config, load_remote_config, load_root_path, check_hard_drive_status
     from downloads_ignore import add_ignored_name, load_ignored_names, remove_ignored_name, save_ignored_names
@@ -74,6 +78,7 @@ except ImportError:
     from name_audit import audit_file_index_names
     from old_but_gold_compare import compare_old_but_gold_paths, compare_package_content, compare_arbitrary_paths
     from old_but_gold_sync import sync_all_to_remote, sync_package_to_remote
+    from operation_manager import operation_manager
     from operations import (
         load_operations_log,
         record_operation,
@@ -85,8 +90,9 @@ except ImportError:
     from remote_catalog import build_remote_catalog
     from remote_search import REMOTE_SECTIONS, REMOTE_SOURCES, search_remote_catalog
     from scanner import scan_all_folders
-    from search import is_excluded_local_entry, search_file_index
+    from search import search_file_index
     from video_metadata import collect_video_folder_metadata
+    from entertainment import preview_path, scan_entertainment
 
 app = FastAPI(title="File Manager API", version="1.0.0")
 
@@ -583,6 +589,19 @@ def get_downloads_custom_state():
 # 5. Local Old But Gold <-> Hard Drive (D:)
 # ==========================================
 
+@app.get("/api/operations/current")
+def get_current_operation():
+    return {"operation": operation_manager.current()}
+
+
+@app.post("/api/operations/stop")
+def stop_current_operation():
+    operation = operation_manager.request_stop()
+    if operation is None:
+        return {"operation": None, "stopped": False}
+    return {"operation": operation, "stopped": True}
+
+
 @app.get("/api/old-gold/diff")
 def get_old_gold_diff(refresh: bool = False):
     local_root = load_root_path()
@@ -620,63 +639,130 @@ class SyncRequest(BaseModel):
 def sync_old_gold(req: SyncRequest):
     local_root = load_root_path()
     remote_root = _remote_old_but_gold_root()
+    label = "Syncing all packages" if req.sync_all else f"Syncing {req.package}"
 
-    if req.sync_all:
-        result = sync_all_to_remote(
+    try:
+        _, stop_event = operation_manager.start("drive_sync", label)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+    try:
+        def on_progress(processed: int, total: int, path: str) -> None:
+            operation_manager.update(
+                phase="byte_compare",
+                processed=processed,
+                total=total,
+                current_path=path,
+            )
+
+        if req.sync_all:
+            result = sync_all_to_remote(
+                local_root,
+                remote_root,
+                delete_remote_extra=req.delete_remote_extra,
+                dry_run=req.dry_run,
+                stop_event=stop_event,
+                on_progress=on_progress,
+            )
+            if result.get("status") == "stopped":
+                return result
+            if not req.dry_run:
+                record_operation(
+                    action_type="drive_sync",
+                    source=str(local_root),
+                    destination=str(remote_root),
+                    description=f"Synced all packages to remote drive (Copied: {result['copied_count']}, Updated: {result['updated_count']}, Deleted: {result['deleted_count']})",
+                    details=result,
+                )
+                diff = compare_old_but_gold_paths(local_root, remote_root)
+                save_old_but_gold_diff(diff)
+            return result
+
+        if not req.package:
+            raise HTTPException(status_code=400, detail="Package name or sync_all=true is required.")
+
+        result = sync_package_to_remote(
+            req.package,
             local_root,
             remote_root,
             delete_remote_extra=req.delete_remote_extra,
             dry_run=req.dry_run,
+            stop_event=stop_event,
+            on_progress=on_progress,
         )
+        if result.get("status") == "stopped":
+            return result
         if not req.dry_run:
             record_operation(
                 action_type="drive_sync",
-                source=str(local_root),
-                destination=str(remote_root),
-                description=f"Synced all packages to remote drive (Copied: {result['copied_count']}, Updated: {result['updated_count']}, Deleted: {result['deleted_count']})",
+                source=str(local_root / req.package),
+                destination=str(remote_root / req.package),
+                description=f"Synced package '{req.package}' to remote drive (Copied: {result['copied_count']}, Updated: {result['updated_count']}, Deleted: {result['deleted_count']})",
                 details=result,
             )
-            # update diff
             diff = compare_old_but_gold_paths(local_root, remote_root)
             save_old_but_gold_diff(diff)
+
         return result
-
-    if not req.package:
-        raise HTTPException(status_code=400, detail="Package name or sync_all=true is required.")
-
-    result = sync_package_to_remote(
-        req.package,
-        local_root,
-        remote_root,
-        delete_remote_extra=req.delete_remote_extra,
-        dry_run=req.dry_run,
-    )
-    if not req.dry_run:
-        record_operation(
-            action_type="drive_sync",
-            source=str(local_root / req.package),
-            destination=str(remote_root / req.package),
-            description=f"Synced package '{req.package}' to remote drive (Copied: {result['copied_count']}, Updated: {result['updated_count']}, Deleted: {result['deleted_count']})",
-            details=result,
-        )
-        # update diff
-        diff = compare_old_but_gold_paths(local_root, remote_root)
-        save_old_but_gold_diff(diff)
-
-    return result
+    finally:
+        operation_manager.finish("stopped" if stop_event.is_set() else "completed")
 
 
 class ByteCompareRequest(BaseModel):
     local_path: str
-    remote_path: str
+    remote_path: str | None = None
 
 
 @app.post("/api/compare/byte")
 def compare_byte_paths(req: ByteCompareRequest):
     """Byte-by-byte comparison of two arbitrary directories."""
     local_path = Path(req.local_path)
-    remote_path = Path(req.remote_path)
-    return compare_arbitrary_paths(local_path, remote_path)
+    local_root = load_root_path()
+    remote_root = _remote_old_but_gold_root()
+
+    if not local_path.exists() or not local_path.is_dir():
+        raise HTTPException(status_code=400, detail="The selected local folder does not exist.")
+
+    if req.remote_path:
+        remote_path = Path(req.remote_path)
+    else:
+        try:
+            relative_path = local_path.resolve().relative_to(local_root.resolve())
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Select a folder inside the local old but gold directory: {local_root}",
+            ) from exc
+        remote_path = remote_root / relative_path
+
+    if not remote_path.exists() or not remote_path.is_dir():
+        raise HTTPException(
+            status_code=404,
+            detail=f"The matching folder does not exist on the hard drive: {remote_path}",
+        )
+
+    try:
+        _, stop_event = operation_manager.start("byte_compare", "Byte-by-byte directory comparison")
+    except RuntimeError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+    try:
+        def on_progress(processed: int, total: int, path: str) -> None:
+            operation_manager.update(
+                phase="byte_compare",
+                processed=processed,
+                total=total,
+                current_path=path,
+            )
+
+        return compare_arbitrary_paths(
+            local_path,
+            remote_path,
+            should_stop=stop_event.is_set,
+            on_progress=on_progress,
+        )
+    finally:
+        operation_manager.finish("stopped" if stop_event.is_set() else "completed")
 
 
 @app.get("/api/browse-dirs")
@@ -778,7 +864,7 @@ def search_local(
     folder: str | None = None,
     limit: int = 50,
 ):
-    files = [file for file in load_file_index() if not is_excluded_local_entry(file)]
+    files = load_file_index()
     if folder:
         files = [f for f in files if f.get("folder", "").casefold() == folder.casefold()]
 
@@ -805,7 +891,6 @@ def search_remote(
 def search_unified(query: str = Query(..., min_length=1), limit: int = 40):
     files = [
         file for file in (load_file_index() if FILE_INDEX.exists() else [])
-        if not is_excluded_local_entry(file)
     ]
     local_res = search_file_index(query, files, limit=limit, sort_by="match")
     # Tag each local result with location
@@ -828,6 +913,42 @@ def search_unified(query: str = Query(..., min_length=1), limit: int = 40):
         "local": {"count": len(local_res), "results": local_res},
         "remote": {"count": len(remote_res), "results": remote_res},
     }
+
+
+@app.get("/api/entertainment")
+async def get_entertainment(
+    query: str = "",
+    sort_by: str = "recommended",
+    descending: bool = False,
+    limit: int = 100,
+):
+    """Rank playable and previewable files from old but gold for the Entertainment tab."""
+    root = load_root_path()
+    results = await run_in_threadpool(
+        scan_entertainment,
+        root,
+        query,
+        sort_by,
+        descending,
+        limit,
+    )
+    return {
+        "root": str(root),
+        "excluded_path": str(root / "New folder"),
+        "query": query,
+        "count": len(results),
+        "results": results,
+    }
+
+
+@app.get("/api/entertainment/preview")
+def entertainment_preview(path: str):
+    root = load_root_path()
+    try:
+        target = preview_path(root, path)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="Entertainment file was not found.") from exc
+    return FileResponse(target, media_type=None, filename=target.name)
 
 
 # ==========================================
@@ -942,7 +1063,9 @@ def remove_to_be_downloaded(req: RemoveDownloadItemRequest):
 
 @app.get("/api/audit/names")
 def get_name_audit(scope: str = "all", limit: int | None = None):
-    files = load_file_index()
+    files = [
+        file for file in load_file_index()
+    ]
     audit_res = audit_file_index_names(files, scope=scope, limit=limit)
     ignored = load_ignored_audit()
 
@@ -1191,20 +1314,10 @@ def open_local_file(req: OpenFileRequest):
                 return {"opened": True, "app": "vlc", "path": str(target)}
 
         if suffix in IMAGE_OPEN_EXTENSIONS:
-            ps = (
-                f"$p = {json.dumps(str(target))}; "
-                "try { "
-                "  Start-Process \"shell:AppsFolder\\Microsoft.Windows.Photos_8wekyb3d8bbwe!App\" "
-                "    -ArgumentList $p -ErrorAction Stop "
-                "} catch { "
-                "  Start-Process $p "
-                "}"
-            )
-            subprocess.Popen(
-                ["powershell", "-NoProfile", "-Command", ps],
-                close_fds=True,
-            )
-            return {"opened": True, "app": "photos", "path": str(target)}
+            # Use the exact file association so Windows opens the selected image,
+            # rather than launching Photos without a reliable file argument.
+            os.startfile(str(target))  # type: ignore[attr-defined]
+            return {"opened": True, "app": "default-image-viewer", "path": str(target)}
 
         os.startfile(str(target))  # type: ignore[attr-defined]
         return {"opened": True, "app": "default", "path": str(target)}
@@ -1227,6 +1340,8 @@ def get_file_type_stats():
         # Use top-level folder as the package group, with subpackage when present
         key = f"{folder}/{package_name}" if package_name and package_name != entry.get("name") else folder
         display_name = package_name if package_name and package_name != entry.get("name") else folder
+        folder_root = folders.get(str(folder).lower(), load_root_path() / str(folder))
+        local_package_path = folder_root / package_name if package_name != folder else folder_root
 
         pkg = packages.setdefault(key, {
             "id": key,
@@ -1236,20 +1351,22 @@ def get_file_type_stats():
             "size_bytes": 0,
             "extensions": {},
             "files": [],
+            "local_path": str(local_package_path),
         })
         ext = (entry.get("extension") or "<none>").casefold()
         size = int(entry.get("size_bytes") or 0)
         pkg["file_count"] += 1
         pkg["size_bytes"] += size
         pkg["extensions"][ext] = pkg["extensions"].get(ext, 0) + 1
-        pkg["files"].append({
+        file_info = {
             "name": entry.get("name"),
             "path": entry.get("path"),
             "folder": folder,
             "extension": ext,
             "size_bytes": size,
             "size_readable": _format_size_bytes(size),
-        })
+        }
+        pkg["files"].append(file_info)
 
     package_list = []
     for pkg in packages.values():
@@ -1273,10 +1390,13 @@ def get_file_type_stats():
             "file_count": 0,
             "size_bytes": 0,
             "extensions": {},
+            "files": [],
+            "local_path": str(folders.get(str(folder).lower(), load_root_path() / str(folder))),
         })
         summary["package_count"] += 1
         summary["file_count"] += pkg["file_count"]
         summary["size_bytes"] += pkg["size_bytes"]
+        summary["files"].extend(pkg["files"])
         for ext, count in pkg["extensions"].items():
             summary["extensions"][ext] = summary["extensions"].get(ext, 0) + count
 

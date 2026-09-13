@@ -19,6 +19,7 @@ import {
   X,
 } from 'lucide-react';
 import { openLocalFile } from '../../utils/openFile';
+import { sortPackagesBySearch } from '../../utils/packageSearch';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend);
 
@@ -32,6 +33,7 @@ interface PackageStats {
   extensions: Record<string, number>;
   extension_count: number;
   top_extension: string;
+  local_path?: string;
   files: Array<{
     name: string;
     path: string;
@@ -50,8 +52,10 @@ interface FileTypeStatsResponse {
     folder: string;
     package_count: number;
     file_count: number;
+    size_bytes: number;
     size_readable: string;
     extensions: Record<string, number>;
+    files?: PackageStats['files'];
   }>;
   packages: PackageStats[];
 }
@@ -70,6 +74,19 @@ export const FileTypesTab: React.FC = () => {
   const [inspectSort, setInspectSort] = useState<'name' | 'extension' | 'size'>('name');
   const [inspectSortDir, setInspectSortDir] = useState<'asc' | 'desc'>('asc');
   const [inspectSearch, setInspectSearch] = useState('');
+
+  const allPackages = [
+    ...(data?.folders || []).map((folder) => ({
+      ...folder,
+      id: `folder:${folder.folder}`,
+      name: folder.folder,
+      extension_count: Object.keys(folder.extensions).length,
+      top_extension: Object.entries(folder.extensions)
+        .sort((left, right) => right[1] - left[1])[0]?.[0] || '',
+      files: folder.files || [],
+    })),
+    ...(data?.packages || []).filter((pkg) => pkg.name !== pkg.folder),
+  ];
 
   const fetchStats = async () => {
     setLoading(true);
@@ -127,12 +144,10 @@ export const FileTypesTab: React.FC = () => {
     });
   };
 
-  const packages = (data?.packages || []).filter((pkg) => {
-    if (folderFilter !== 'all' && pkg.folder !== folderFilter) return false;
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase();
-    return pkg.name.toLowerCase().includes(q) || pkg.folder.toLowerCase().includes(q);
-  });
+  const packages = sortPackagesBySearch(
+    allPackages.filter((pkg) => folderFilter === 'all' || pkg.folder === folderFilter),
+    searchQuery,
+  );
 
   const overallExtCounts: Record<string, number> = {};
   for (const pkg of packages) {

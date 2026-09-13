@@ -14,6 +14,19 @@ export interface SystemStatus {
   operations_count: number;
 }
 
+export interface CurrentOperation {
+  id: string;
+  type: string;
+  label: string;
+  status: string;
+  phase: string;
+  processed: number;
+  total: number;
+  current_path?: string;
+  started_at: string;
+  stop_requested: boolean;
+}
+
 export interface DataFileInfo {
   exists: boolean;
   size_bytes: number;

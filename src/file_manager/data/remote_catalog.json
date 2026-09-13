@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-09-13T13:28:55+03:00",
+    "generated_at": "2026-09-13T20:37:48+03:00",
     "drive": "D:",
     "drive_imported": true,
     "root_path": "D:\\",
@@ -146,6 +146,8 @@
             "Harry Potter and the Order of the Phoenix 2007 1080p BluRay HEVC x265 5.1 BONE.mkv",
             "Harry Potter and the Philosophers Stone 2001 Extended 1080p BluRay HEVC x265 5.1 BONE.mkv",
             "Harry Potter and the Prisoner of Azkaban 2004 1080p BluRay HEVC x265 5.1 BONE.mkv",
+            "Hitman (2007) UNRATED 720p.BrRiP.x264.YIFY.mp4",
+            "Hitman (2007) UNRATED 720p.BrRiP.x264.YIFY.srt",
             "Home.Alone.1990.1080p-720p.BluRay.x264.YIFY.Eng.srt",
             "Home.Alone.1990.1080p.BluRay.x264.YIFY.mp4",
             "Home.Alone.2.Lost.in.New.York.1992.1080p.BluRay.x264.YIFY.mp4",
@@ -534,7 +536,7 @@
             "remote_available": true,
             "local_path": "C:\\Users\\minas\\Desktop\\old but gold\\Movies",
             "local_available": false,
-            "remote_count": 382,
+            "remote_count": 384,
             "local_count": 0,
             "to_be_downloaded_count": 14
         },

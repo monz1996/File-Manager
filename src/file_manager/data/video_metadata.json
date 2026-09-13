@@ -1,15 +1,15 @@
 {
-    "generated_at": "2026-09-13T13:58:09+03:00",
+    "generated_at": "2026-09-13T21:10:28+03:00",
     "source_folder": "C:\\Users\\minas\\Desktop\\old but gold\\videos",
-    "package_count": 22,
-    "total_size_bytes": 129129249045,
-    "total_size_readable": "120.26 GB",
-    "video_file_count": 624,
-    "total_duration_seconds": 517061.148,
-    "total_duration_readable": "143:37:41",
-    "videos_with_known_quality": 614,
+    "package_count": 23,
+    "total_size_bytes": 130396937789,
+    "total_size_readable": "121.44 GB",
+    "video_file_count": 630,
+    "total_duration_seconds": 523081.037,
+    "total_duration_readable": "145:18:01",
+    "videos_with_known_quality": 620,
     "quality_counts": {
-        "1080p": 360,
+        "1080p": 364,
         "1440p": 4,
         "144p": 1,
         "160p": 1,
@@ -28,7 +28,7 @@
         "306p": 1,
         "320p": 1,
         "356p": 1,
-        "360p": 30,
+        "360p": 32,
         "480p": 42,
         "720p": 154,
         "unknown": 10
@@ -3696,23 +3696,23 @@
         {
             "name": "Elden Ring",
             "path": "Elden Ring",
-            "size_bytes": 25519421097,
-            "size_readable": "23.77 GB",
-            "video_size_bytes": 25519421097,
-            "video_size_readable": "23.77 GB",
-            "file_count": 38,
-            "video_count": 38,
+            "size_bytes": 26072320226,
+            "size_readable": "24.28 GB",
+            "video_size_bytes": 26072320226,
+            "video_size_readable": "24.28 GB",
+            "file_count": 41,
+            "video_count": 41,
             "other_file_count": 0,
             "extensions": {
-                ".mp4": 35,
+                ".mp4": 38,
                 ".webm": 3
             },
-            "total_duration_seconds": 52439.083,
-            "total_duration_readable": "14:33:59",
-            "videos_with_known_duration": 38,
-            "videos_with_known_quality": 35,
+            "total_duration_seconds": 53375.22,
+            "total_duration_readable": "14:49:35",
+            "videos_with_known_duration": 41,
+            "videos_with_known_quality": 38,
             "quality_counts": {
-                "1080p": 35,
+                "1080p": 38,
                 "unknown": 3
             },
             "videos": [
@@ -3848,6 +3848,63 @@
                     },
                     "created_at": "2026-09-12T08:45:52+03:00",
                     "modified_at": "2026-09-11T18:32:44+03:00"
+                },
+                {
+                    "name": "Elden Ring Elden Beast attack.mp4",
+                    "path": "Elden Ring/Elden Ring Elden Beast attack.mp4",
+                    "extension": ".mp4",
+                    "size_bytes": 36824438,
+                    "size_readable": "35.12 MB",
+                    "duration_seconds": 74.281,
+                    "duration_readable": "00:01:14",
+                    "quality": {
+                        "width": 1920,
+                        "height": 1080,
+                        "resolution": "1920x1080",
+                        "quality_label": "1080p",
+                        "aspect_ratio": "16:9",
+                        "estimated_total_bitrate_kbps": 3966
+                    },
+                    "created_at": "2026-09-13T19:32:19+03:00",
+                    "modified_at": "2026-09-13T19:32:37+03:00"
+                },
+                {
+                    "name": "ELDEN RING elden beast grab attack.mp4",
+                    "path": "Elden Ring/ELDEN RING elden beast grab attack.mp4",
+                    "extension": ".mp4",
+                    "size_bytes": 20356652,
+                    "size_readable": "19.41 MB",
+                    "duration_seconds": 29.629,
+                    "duration_readable": "00:00:30",
+                    "quality": {
+                        "width": 1920,
+                        "height": 1080,
+                        "resolution": "1920x1080",
+                        "quality_label": "1080p",
+                        "aspect_ratio": "16:9",
+                        "estimated_total_bitrate_kbps": 5496
+                    },
+                    "created_at": "2026-09-13T19:32:39+03:00",
+                    "modified_at": "2026-09-13T19:32:57+03:00"
+                },
+                {
+                    "name": "Elden Ring Lore_ What is the Elden Beast_.mp4",
+                    "path": "Elden Ring/Elden Ring Lore_ What is the Elden Beast_.mp4",
+                    "extension": ".mp4",
+                    "size_bytes": 495718039,
+                    "size_readable": "472.75 MB",
+                    "duration_seconds": 832.227,
+                    "duration_readable": "00:13:52",
+                    "quality": {
+                        "width": 1920,
+                        "height": 1080,
+                        "resolution": "1920x1080",
+                        "quality_label": "1080p",
+                        "aspect_ratio": "16:9",
+                        "estimated_total_bitrate_kbps": 4765
+                    },
+                    "created_at": "2026-09-13T19:31:33+03:00",
+                    "modified_at": "2026-09-13T19:33:46+03:00"
                 },
                 {
                     "name": "ELDEN RING Shadow of the Erdtree  Story Trailer.mp4",
@@ -4443,25 +4500,26 @@
         {
             "name": "English",
             "path": "English",
-            "size_bytes": 711925437,
-            "size_readable": "678.95 MB",
-            "video_size_bytes": 711925437,
-            "video_size_readable": "678.95 MB",
-            "file_count": 27,
-            "video_count": 27,
-            "other_file_count": 0,
+            "size_bytes": 719918449,
+            "size_readable": "686.57 MB",
+            "video_size_bytes": 719918313,
+            "video_size_readable": "686.57 MB",
+            "file_count": 29,
+            "video_count": 28,
+            "other_file_count": 1,
             "extensions": {
-                ".mp4": 27
+                ".ini": 1,
+                ".mp4": 28
             },
-            "total_duration_seconds": 3683.279,
-            "total_duration_readable": "01:01:23",
-            "videos_with_known_duration": 27,
-            "videos_with_known_quality": 27,
+            "total_duration_seconds": 3902.592,
+            "total_duration_readable": "01:05:03",
+            "videos_with_known_duration": 28,
+            "videos_with_known_quality": 28,
             "quality_counts": {
                 "1080p": 11,
                 "1440p": 1,
                 "320p": 1,
-                "360p": 3,
+                "360p": 4,
                 "480p": 2,
                 "720p": 9
             },
@@ -4788,6 +4846,25 @@
                     },
                     "created_at": "2026-08-22T14:52:51+03:00",
                     "modified_at": "2022-01-22T12:01:30+02:00"
+                },
+                {
+                    "name": "Prince Zuko's Destiny _ Avatar_ The Last Airbender.mp4",
+                    "path": "English/Prince Zuko's Destiny _ Avatar_ The Last Airbender.mp4",
+                    "extension": ".mp4",
+                    "size_bytes": 7992876,
+                    "size_readable": "7.62 MB",
+                    "duration_seconds": 219.313,
+                    "duration_readable": "00:03:39",
+                    "quality": {
+                        "width": 480,
+                        "height": 360,
+                        "resolution": "480x360",
+                        "quality_label": "360p",
+                        "aspect_ratio": "4:3",
+                        "estimated_total_bitrate_kbps": 292
+                    },
+                    "created_at": "2026-09-13T19:11:28+03:00",
+                    "modified_at": "2026-09-13T19:11:40+03:00"
                 },
                 {
                     "name": "Sekiro Trailer.mp4",
@@ -5914,22 +5991,22 @@
         {
             "name": "long videos",
             "path": "long videos",
-            "size_bytes": 1681926461,
-            "size_readable": "1.57 GB",
-            "video_size_bytes": 1681926461,
-            "video_size_readable": "1.57 GB",
-            "file_count": 18,
-            "video_count": 18,
+            "size_bytes": 2388349283,
+            "size_readable": "2.22 GB",
+            "video_size_bytes": 2388349283,
+            "video_size_readable": "2.22 GB",
+            "file_count": 19,
+            "video_count": 19,
             "other_file_count": 0,
             "extensions": {
-                ".mp4": 18
+                ".mp4": 19
             },
-            "total_duration_seconds": 15590.163,
-            "total_duration_readable": "04:19:50",
-            "videos_with_known_duration": 18,
-            "videos_with_known_quality": 18,
+            "total_duration_seconds": 20429.968,
+            "total_duration_readable": "05:40:30",
+            "videos_with_known_duration": 19,
+            "videos_with_known_quality": 19,
             "quality_counts": {
-                "1080p": 7,
+                "1080p": 8,
                 "240p": 1,
                 "360p": 1,
                 "480p": 1,
@@ -6108,6 +6185,25 @@
                     "modified_at": "2025-10-12T11:19:17+03:00"
                 },
                 {
+                    "name": "Why Zuko's Story is the Defining Element of Avatar.mp4",
+                    "path": "long videos/Why Zuko's Story is the Defining Element of Avatar.mp4",
+                    "extension": ".mp4",
+                    "size_bytes": 706422822,
+                    "size_readable": "673.70 MB",
+                    "duration_seconds": 4839.805,
+                    "duration_readable": "01:20:40",
+                    "quality": {
+                        "width": 1920,
+                        "height": 1080,
+                        "resolution": "1920x1080",
+                        "quality_label": "1080p",
+                        "aspect_ratio": "16:9",
+                        "estimated_total_bitrate_kbps": 1168
+                    },
+                    "created_at": "2026-09-13T19:13:39+03:00",
+                    "modified_at": "2026-09-13T19:16:32+03:00"
+                },
+                {
                     "name": "Xavier_ Renegade Angel Episode 1 Season 1.mp4",
                     "path": "long videos/Xavier_ Renegade Angel Episode 1 Season 1.mp4",
                     "extension": ".mp4",
@@ -6277,6 +6373,48 @@
                     },
                     "created_at": "2026-09-04T15:15:02+03:00",
                     "modified_at": "2026-09-04T15:12:43+03:00"
+                }
+            ]
+        },
+        {
+            "name": "Newss11-- folder",
+            "path": "Newss11-- folder",
+            "size_bytes": 373781,
+            "size_readable": "365.02 KB",
+            "video_size_bytes": 373781,
+            "video_size_readable": "365.02 KB",
+            "file_count": 1,
+            "video_count": 1,
+            "other_file_count": 0,
+            "extensions": {
+                ".mp4": 1
+            },
+            "total_duration_seconds": 24.634,
+            "total_duration_readable": "00:00:25",
+            "videos_with_known_duration": 1,
+            "videos_with_known_quality": 1,
+            "quality_counts": {
+                "360p": 1
+            },
+            "videos": [
+                {
+                    "name": "Ya Mohamed Ramadan.mp4",
+                    "path": "Newss11-- folder/Ya Mohamed Ramadan.mp4",
+                    "extension": ".mp4",
+                    "size_bytes": 373781,
+                    "size_readable": "365.02 KB",
+                    "duration_seconds": 24.634,
+                    "duration_readable": "00:00:25",
+                    "quality": {
+                        "width": 240,
+                        "height": 426,
+                        "resolution": "240x426",
+                        "quality_label": "360p",
+                        "aspect_ratio": "40:71",
+                        "estimated_total_bitrate_kbps": 121
+                    },
+                    "created_at": "2026-09-13T21:08:05+03:00",
+                    "modified_at": "2021-08-23T17:02:05+03:00"
                 }
             ]
         },
