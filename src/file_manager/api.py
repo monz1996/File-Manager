@@ -969,7 +969,12 @@ async def entertainment_thumbnail(path: str):
         # The frontend will handle this by showing the fallback gradient
         raise HTTPException(status_code=404, detail="Thumbnail generation failed or ffmpeg not available.")
     
-    return FileResponse(thumbnail_path, media_type="image/jpeg", filename=thumbnail_path.name)
+    return FileResponse(
+        thumbnail_path,
+        media_type="image/jpeg",
+        filename=thumbnail_path.name,
+        headers={"Cache-Control": "public, max-age=86400, immutable"},
+    )
 
 
 @app.post("/api/entertainment/thumbnails/clear")

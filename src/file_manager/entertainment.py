@@ -3,8 +3,11 @@ from __future__ import annotations
 import hashlib
 import mimetypes
 import json
+import os
+import re
 import secrets
 import subprocess
+import threading
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -21,29 +24,34 @@ AUDIO_EXTENSIONS = {".mp3", ".wav", ".m4a", ".aac", ".flac", ".ogg", ".opus", ".
 
 # Thumbnail cache directory (relative to file store location)
 THUMBNAIL_CACHE_DIR = FILE_INDEX.parent / "entertainment_thumbnails"
-THUMBNAIL_SIZE = (320, 180)  # 16:9 aspect ratio, reasonable for grid display
+THUMBNAIL_SIZE = (640, 360)  # Render above display size so thumbnails stay sharp.
+THUMBNAIL_CACHE_VERSION = "v6"
 
 # Global flag to track if thumbnail generation is available
 _THUMBNAIL_GENERATION_AVAILABLE = None
+_THUMBNAIL_LOCKS: dict[str, threading.Lock] = {}
+_THUMBNAIL_LOCKS_GUARD = threading.Lock()
+
+
+def _ffmpeg_executable() -> str | None:
+    try:
+        from imageio_ffmpeg import get_ffmpeg_exe
+
+        return get_ffmpeg_exe()
+    except (ImportError, OSError, RuntimeError):
+        return None
 
 
 def is_thumbnail_generation_available() -> bool:
-    """Check if thumbnail generation is available (ffmpeg or Windows Shell)."""
+    """Check if bundled or system FFmpeg is available."""
     global _THUMBNAIL_GENERATION_AVAILABLE
     if _THUMBNAIL_GENERATION_AVAILABLE is not None:
         return _THUMBNAIL_GENERATION_AVAILABLE
     
-    # Check ffmpeg
-    if _check_ffmpeg_available():
+    if _ffmpeg_executable() is not None or _check_ffmpeg_available():
         _THUMBNAIL_GENERATION_AVAILABLE = True
         return True
-    
-    # Check Windows Shell on Windows
-    import platform
-    if platform.system() == "Windows":
-        _THUMBNAIL_GENERATION_AVAILABLE = True
-        return True
-    
+
     _THUMBNAIL_GENERATION_AVAILABLE = False
     return False
 
@@ -189,13 +197,13 @@ def _get_thumbnail_cache_path(video_path: Path) -> Path:
     try:
         stat = video_path.stat()
         # Use path + size + mtime to ensure cache invalidation on file changes
-        cache_key = f"{video_path}_{stat.st_size}_{stat.st_mtime}"
+        cache_key = f"{THUMBNAIL_CACHE_VERSION}_{video_path}_{stat.st_size}_{stat.st_mtime}"
         hash_obj = hashlib.md5(cache_key.encode('utf-8'))
         cache_filename = f"{hash_obj.hexdigest()}.jpg"
         return THUMBNAIL_CACHE_DIR / cache_filename
     except OSError:
         # Fallback to path-only hash if stat fails
-        cache_key = str(video_path)
+        cache_key = f"{THUMBNAIL_CACHE_VERSION}_{video_path}"
         hash_obj = hashlib.md5(cache_key.encode('utf-8'))
         cache_filename = f"{hash_obj.hexdigest()}.jpg"
         return THUMBNAIL_CACHE_DIR / cache_filename
@@ -203,9 +211,10 @@ def _get_thumbnail_cache_path(video_path: Path) -> Path:
 
 def _check_ffmpeg_available() -> bool:
     """Check if ffmpeg is available on the system."""
+    executable = _ffmpeg_executable() or "ffmpeg"
     try:
         result = subprocess.run(
-            ["ffmpeg", "-version"],
+            [executable, "-version"],
             capture_output=True,
             check=False,
             timeout=5
@@ -213,6 +222,97 @@ def _check_ffmpeg_available() -> bool:
         return result.returncode == 0
     except (OSError, subprocess.TimeoutExpired, FileNotFoundError):
         return False
+
+
+def _video_duration(video_path: Path, ffmpeg: str) -> float | None:
+    try:
+        result = subprocess.run(
+            [ffmpeg, "-i", str(video_path)],
+            capture_output=True,
+            check=False,
+            timeout=15,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+
+    diagnostic_output = result.stderr.decode("utf-8", errors="replace")
+    match = re.search(r"Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)", diagnostic_output)
+    if not match:
+        return None
+    hours, minutes, seconds = match.groups()
+    return int(hours) * 3600 + int(minutes) * 60 + float(seconds)
+
+
+def _frame_is_almost_black(video_path: Path, ffmpeg: str, timestamp: float) -> bool:
+    try:
+        result = subprocess.run(
+            [
+                ffmpeg,
+                "-i", str(video_path),
+                "-ss", str(max(0.0, timestamp)),
+                "-frames:v", "1",
+                "-vf", "scale=64:36",
+                "-f", "rawvideo",
+                "-pix_fmt", "gray",
+                "pipe:1",
+            ],
+            capture_output=True,
+            check=False,
+            timeout=30,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+
+    pixels = result.stdout
+    if not pixels:
+        return False
+    average = sum(pixels) / len(pixels)
+    bright_pixels = sum(pixel > 40 for pixel in pixels)
+    return average < 18 and bright_pixels / len(pixels) < 0.05
+
+
+def _frame_quality(image_path: Path, ffmpeg: str) -> tuple[float, float]:
+    try:
+        result = subprocess.run(
+            [
+                ffmpeg,
+                "-i", str(image_path),
+                "-vf", "scale=64:36",
+                "-f", "rawvideo",
+                "-pix_fmt", "gray",
+                "pipe:1",
+            ],
+            capture_output=True,
+            check=False,
+            timeout=15,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return 0.0, 0.0
+
+    pixels = result.stdout
+    if not pixels:
+        return 0.0, 0.0
+    values = list(pixels)
+    average = sum(values) / len(values)
+    variance = sum((value - average) ** 2 for value in values) / len(values)
+    return average, variance
+
+
+def _thumbnail_score(image_path: Path, ffmpeg: str) -> float:
+    """Prefer bright, detailed frames and avoid nearly solid-color thumbnails."""
+    average, variance = _frame_quality(image_path, ffmpeg)
+    if not variance or average < 18:
+        return -1.0
+    brightness_score = min(average, 150.0) / 150.0
+    detail_score = min(variance, 2200.0) / 2200.0
+    return brightness_score * 0.35 + detail_score * 0.65
+
+
+def _thumbnail_timestamps(duration: float | None) -> list[float]:
+    if duration is None or duration <= 0:
+        return [1.0, 3.0, 6.0]
+    usable_duration = max(1.0, duration - 0.5)
+    return sorted({round(usable_duration * position, 3) for position in (0.2, 0.4, 0.6, 0.8)})
 
 
 def _generate_windows_shell_thumbnail(video_path: Path, cache_path: Path) -> bool:
@@ -295,56 +395,75 @@ def generate_video_thumbnail(video_path: Path) -> Path | None:
     if cache_path.exists():
         return cache_path
     
-    # Try ffmpeg first if available
-    if _check_ffmpeg_available():
-        try:
-            # Extract a frame at 10% of the video duration (or at 1 second if duration unknown)
-            # Scale to desired size, maintaining aspect ratio
-            width, height = THUMBNAIL_SIZE
-            cmd = [
-                "ffmpeg",
-                "-i", str(video_path),
-                "-ss", "00:00:01",  # Seek to 1 second (adjust if needed)
-                "-vframes", "1",     # Extract single frame
-                "-vf", f"scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}:(ow-iw)/2:(oh-ih)/2",
-                "-q:v", "2",         # Quality setting for JPEG
-                "-y",                # Overwrite output file
-                str(cache_path)
-            ]
-            
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                check=False,
-                timeout=30
-            )
-            
-            if result.returncode == 0 and cache_path.exists() and cache_path.stat().st_size > 0:
-                return cache_path
-            else:
-                # Clean up failed attempt
-                if cache_path.exists():
-                    cache_path.unlink()
-        except (OSError, subprocess.TimeoutExpired, Exception) as e:
-            # Clean up failed attempt
-            if cache_path.exists():
-                try:
-                    cache_path.unlink()
-                except OSError:
-                    pass
-            print(f"FFmpeg thumbnail generation failed: {e}")
-    
-    # Fallback: Try Windows Shell thumbnail extraction on Windows
-    import platform
-    if platform.system() == "Windows":
-        try:
-            print(f"Trying Windows Shell thumbnail extraction for video")
-            if _generate_windows_shell_thumbnail(video_path, cache_path):
-                return cache_path
-            else:
-                print("Windows Shell thumbnail extraction failed")
-        except Exception as e:
-            print(f"Windows Shell thumbnail extraction error: {e}")
+    lock_key = str(video_path.resolve())
+    with _THUMBNAIL_LOCKS_GUARD:
+        lock = _THUMBNAIL_LOCKS.setdefault(lock_key, threading.Lock())
+    with lock:
+        if cache_path.exists():
+            return cache_path
+
+        # Start with one representative frame for fast loads. Only sample more
+        # points when that frame is too dark or lacks enough visual detail.
+        ffmpeg = _ffmpeg_executable() or ("ffmpeg" if _check_ffmpeg_available() else None)
+        if ffmpeg:
+            candidate_paths: list[Path] = []
+            try:
+                duration = _video_duration(video_path, ffmpeg)
+                width, height = THUMBNAIL_SIZE
+                timestamps = _thumbnail_timestamps(duration)
+                for index, timestamp in enumerate(timestamps[:1]):
+                    candidate = cache_path.with_name(
+                        f"{cache_path.stem}.candidate-{os.getpid()}-{threading.get_ident()}-{index}.jpg"
+                    )
+                    candidate_paths.append(candidate)
+                    cmd = [
+                        ffmpeg, "-ss", str(timestamp), "-i", str(video_path),
+                        "-frames:v", "1", "-an",
+                        "-vf", f"scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}:(ow-iw)/2:(oh-ih)/2",
+                        "-q:v", "2", "-y", str(candidate),
+                    ]
+                    result = subprocess.run(cmd, capture_output=True, check=False, timeout=30)
+                    if result.returncode != 0 or not candidate.exists() or candidate.stat().st_size <= 1024:
+                        candidate.unlink(missing_ok=True)
+
+                scores = {}
+                for candidate in candidate_paths:
+                    if candidate.exists():
+                        scores[candidate] = _thumbnail_score(candidate, ffmpeg)
+                if scores and max(scores.values()) < 0:
+                    for index, timestamp in enumerate(timestamps[1:], 1):
+                        candidate = cache_path.with_name(
+                            f"{cache_path.stem}.candidate-{os.getpid()}-{threading.get_ident()}-{index}.jpg"
+                        )
+                        candidate_paths.append(candidate)
+                        cmd = [
+                            ffmpeg, "-ss", str(timestamp), "-i", str(video_path),
+                            "-frames:v", "1", "-an",
+                            "-vf", f"scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}:(ow-iw)/2:(oh-ih)/2",
+                            "-q:v", "2", "-y", str(candidate),
+                        ]
+                        result = subprocess.run(cmd, capture_output=True, check=False, timeout=30)
+                        if result.returncode == 0 and candidate.exists() and candidate.stat().st_size > 1024:
+                            scores[candidate] = _thumbnail_score(candidate, ffmpeg)
+                        else:
+                            candidate.unlink(missing_ok=True)
+
+                usable_candidates = [candidate for candidate, score in scores.items() if score >= 0]
+                if usable_candidates:
+                    best_candidate = max(usable_candidates, key=lambda candidate: scores[candidate])
+                    best_candidate.replace(cache_path)
+                    return cache_path
+                if scores:
+                    # Some valid videos contain only dark or low-detail footage.
+                    # Serve the extracted frame rather than returning a 404.
+                    fallback_candidate = max(scores, key=lambda candidate: candidate.stat().st_size)
+                    fallback_candidate.replace(cache_path)
+                    return cache_path
+            except (OSError, subprocess.TimeoutExpired) as e:
+                print(f"FFmpeg thumbnail generation failed: {e}")
+            finally:
+                for candidate in candidate_paths:
+                    candidate.unlink(missing_ok=True)
     
     return None
 

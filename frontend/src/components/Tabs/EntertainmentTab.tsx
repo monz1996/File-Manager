@@ -35,7 +35,7 @@ const LazyThumbnail: React.FC<{
   const containerRef = useRef<HTMLDivElement>(null);
   const [shouldLoad, setShouldLoad] = useState(false);
   const [failed, setFailed] = useState(false);
-  const [videoReady, setVideoReady] = useState(false);
+  const [retry, setRetry] = useState(0);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -55,35 +55,20 @@ const LazyThumbnail: React.FC<{
 
   return (
     <div ref={containerRef} className="w-full h-full flex items-center justify-center">
-      {shouldLoad && !failed && item.kind === 'image' && src ? (
+      {shouldLoad && !failed && (item.kind === 'image' || item.kind === 'video') && src ? (
         <img 
-          src={src} 
+          src={retry ? `${src}${src.includes('?') ? '&' : '?'}retry=${retry}` : src}
           alt="" 
-          loading="lazy" 
+          loading="lazy"
           decoding="async" 
-          onError={() => setFailed(true)}
-          className="w-full h-full object-cover" 
-        />
-      ) : shouldLoad && !failed && item.kind === 'video' && src ? (
-        <video
-          ref={(video) => {
-            if (video && video.readyState >= 1 && video.currentTime === 0) {
-              video.currentTime = Math.min(1, video.duration || 1);
+          onError={() => {
+            if (retry < 1) {
+              window.setTimeout(() => setRetry(1), 250);
+            } else {
+              setFailed(true);
             }
           }}
-          src={src}
-          muted
-          playsInline
-          preload="metadata"
-          onLoadedMetadata={(event) => {
-            event.currentTarget.currentTime = Math.min(1, event.currentTarget.duration || 1);
-          }}
-          onSeeked={(event) => {
-            event.currentTarget.pause();
-            setVideoReady(true);
-          }}
-          onError={() => setFailed(true)}
-          className={`w-full h-full object-cover ${videoReady ? '' : 'invisible'}`}
+          className="w-full h-full object-cover"
         />
       ) : (
         <div className={`w-full h-full flex flex-col items-center justify-center gap-3 ${
@@ -146,6 +131,7 @@ export const EntertainmentTab: React.FC = () => {
   }, [query, sortBy, descending, refreshKey]);
 
   const previewUrl = (path: string) => `/api/entertainment/preview?path=${encodeURIComponent(path)}`;
+  const thumbnailUrl = (path: string) => `/api/entertainment/thumbnail?path=${encodeURIComponent(path)}`;
   const openItem = (item: EntertainmentItem) => {
     void openLocalFile({ path: item.path, absolute: true });
   };
@@ -196,7 +182,7 @@ export const EntertainmentTab: React.FC = () => {
               <div className="relative h-44 bg-slate-950 flex items-center justify-center overflow-hidden">
                 <LazyThumbnail
                   item={item}
-                  src={item.kind === 'image' || item.kind === 'video' ? previewUrl(item.path) : undefined}
+                  src={item.kind === 'image' ? previewUrl(item.path) : item.kind === 'video' ? thumbnailUrl(item.path) : undefined}
                   icon={iconFor(item.kind)}
                 />
                 <span className="absolute bottom-2 left-2 px-2 py-1 rounded-md bg-black/70 text-[10px] text-white">{item.extension || 'file'}</span>
