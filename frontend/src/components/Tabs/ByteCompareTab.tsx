@@ -58,7 +58,7 @@ export const ByteCompareTab: React.FC<ByteCompareTabProps> = ({ currentOperation
   const fetchPackages = async () => {
     setPackagesLoading(true);
     try {
-      const res = await fetch('/api/file-type-stats');
+      const res = await fetch('/api/file-type-stats?exclude_new_folder=false');
       if (res.ok) {
         const data = await res.json();
         const mainPackages = (data.folders || []).map((folder: PackageOption) => ({

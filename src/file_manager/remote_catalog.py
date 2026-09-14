@@ -48,6 +48,12 @@ def build_remote_catalog(
         local_path = _local_section_path(section, default_relative_path, local_folders)
         remote_names = _collect_section_names(section, remote_path)
         local_names = _collect_section_names(section, local_path)
+        missing_names = _names_missing_from_remote(local_names, remote_names)
+        if missing_names:
+            catalog["to_be_downloaded"][section] = _merge_unique_names(
+                catalog["to_be_downloaded"].get(section, []),
+                missing_names,
+            )
 
         catalog["names"][section] = remote_names
         catalog["sources"][section] = {
@@ -162,3 +168,29 @@ def _to_be_downloaded(existing: dict[str, list[str]] | None) -> dict[str, list[s
         ]
 
     return sections
+
+
+def _names_missing_from_remote(
+    local_names: list[str],
+    remote_names: list[str],
+) -> list[str]:
+    remote_lookup = {_normalize_name(name) for name in remote_names}
+    return [
+        name
+        for name in local_names
+        if _normalize_name(name) not in remote_lookup
+    ]
+
+
+def _merge_unique_names(*name_lists: list[str]) -> list[str]:
+    merged: dict[str, str] = {}
+    for names in name_lists:
+        for name in names:
+            normalized = _normalize_name(name)
+            if normalized and normalized not in merged:
+                merged[normalized] = name.strip()
+    return sorted(merged.values(), key=str.casefold)
+
+
+def _normalize_name(name: str) -> str:
+    return " ".join(name.casefold().split())

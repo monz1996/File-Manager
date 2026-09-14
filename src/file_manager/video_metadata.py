@@ -28,10 +28,12 @@ MATROSKA_EXTENSIONS = {".mkv", ".webm"}
 def collect_video_folder_metadata(videos_folder: Path) -> dict:
     packages = []
 
-    for package_path in sorted(videos_folder.iterdir(), key=lambda path: path.name.casefold()):
-        if not package_path.is_dir():
-            continue
+    package_paths = find_video_package_paths(videos_folder)
 
+    for package_path in sorted(
+        package_paths,
+        key=lambda path: path.relative_to(videos_folder).as_posix().casefold(),
+    ):
         package_files = [path for path in package_path.rglob("*") if path.is_file()]
         video_files = [
             path for path in package_files
@@ -52,8 +54,8 @@ def collect_video_folder_metadata(videos_folder: Path) -> dict:
         )
 
         packages.append({
-            "name": package_path.name,
-            "path": package_path.relative_to(videos_folder).as_posix(),
+            "name": videos_folder.name if package_path == videos_folder else package_path.name,
+            "path": "" if package_path == videos_folder else package_path.relative_to(videos_folder).as_posix(),
             "size_bytes": total_size_bytes,
             "size_readable": _format_bytes(total_size_bytes),
             "video_size_bytes": total_video_size_bytes,
@@ -70,8 +72,19 @@ def collect_video_folder_metadata(videos_folder: Path) -> dict:
             "videos": videos,
         })
 
-    total_size_bytes = sum(package["size_bytes"] for package in packages)
-    total_duration_seconds = sum(package["total_duration_seconds"] for package in packages)
+    all_files = [path for path in videos_folder.rglob("*") if path.is_file()]
+    unique_videos = {
+        video["path"]: video
+        for package in packages
+        for video in package["videos"]
+    }
+    unique_quality_counts = _count_quality_labels(list(unique_videos.values()))
+    total_size_bytes = sum(path.stat().st_size for path in all_files)
+    total_duration_seconds = sum(
+        video["duration_seconds"]
+        for video in unique_videos.values()
+        if video["duration_seconds"] is not None
+    )
 
     return {
         "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
@@ -79,15 +92,29 @@ def collect_video_folder_metadata(videos_folder: Path) -> dict:
         "package_count": len(packages),
         "total_size_bytes": total_size_bytes,
         "total_size_readable": _format_bytes(total_size_bytes),
-        "video_file_count": sum(package["video_count"] for package in packages),
+        "video_file_count": len(unique_videos),
         "total_duration_seconds": round(total_duration_seconds, 3),
         "total_duration_readable": _format_duration(total_duration_seconds),
         "videos_with_known_quality": sum(
-            package["videos_with_known_quality"] for package in packages
+            1
+            for video in unique_videos.values()
+            if video["quality"]["width"] is not None and video["quality"]["height"] is not None
         ),
-        "quality_counts": _merge_quality_counts(packages),
+        "quality_counts": unique_quality_counts,
         "packages": packages,
     }
+
+
+def find_video_package_paths(videos_folder: Path) -> list[Path]:
+    """Return every non-empty package directory, including nested packages."""
+    package_paths = [
+        path
+        for path in videos_folder.rglob("*")
+        if path.is_dir() and any(child.is_file() for child in path.rglob("*"))
+    ]
+    if videos_folder.is_dir() and any(child.is_file() for child in videos_folder.iterdir()):
+        package_paths.append(videos_folder)
+    return package_paths
 
 
 def _build_video_entry(path: Path, videos_folder: Path) -> dict:

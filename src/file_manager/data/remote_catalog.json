@@ -498,6 +498,7 @@
             "الشبح",
             "المصلحة",
             "بدل فاقد",
+            "تصبح علي خير",
             "حلم عزيز",
             "سبع البرمبة",
             "مسجون ترانزيت",
@@ -538,7 +539,7 @@
             "local_available": false,
             "remote_count": 384,
             "local_count": 0,
-            "to_be_downloaded_count": 14
+            "to_be_downloaded_count": 15
         },
         "series": {
             "remote_path": "D:\\series",

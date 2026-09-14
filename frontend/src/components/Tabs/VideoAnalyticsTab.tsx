@@ -397,7 +397,7 @@ export const VideoAnalyticsTab: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filteredPackages.map((pkg) => (
             <div
-              key={pkg.name}
+              key={pkg.path}
             className="p-5 rounded-xl bg-slate-800/60 border border-slate-700 hover:border-slate-600 transition duration-150 flex flex-col justify-between space-y-4 shadow-md"
             >
               <div>

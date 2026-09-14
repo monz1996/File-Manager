@@ -18,11 +18,39 @@ def scan_folder(folder_path: Path) -> list[dict]:
 
 def scan_all_folders(folders: dict[str, Path]) -> dict[str, list[dict]]:
     result = {}
+    root_path = folders.get("__root__")
 
+    if root_path is not None:
+        result["old but gold"] = scan_direct_files(root_path)
+
+    configured_paths = {
+        path.resolve()
+        for name, path in folders.items()
+        if name != "__root__" and path.exists()
+    }
     for folder_name, folder_path in folders.items():
+        if folder_name == "__root__":
+            continue
         result[folder_name] = scan_folder(folder_path)
 
+    if root_path is not None and root_path.exists():
+        for child in root_path.iterdir():
+            if child.is_dir() and child.resolve() not in configured_paths:
+                result.setdefault(child.name, scan_folder(child))
+
     return result
+
+
+def scan_direct_files(folder_path: Path) -> list[dict]:
+    """Scan only files directly inside a root so configured subfolders are not duplicated."""
+    if not folder_path.exists() or not folder_path.is_dir():
+        return []
+
+    return [
+        _build_file_entry(file, folder_path)
+        for file in folder_path.iterdir()
+        if file.is_file() and not is_hidden_or_system(file)
+    ]
 
 
 def _build_file_entry(file_path: Path, folder_path: Path) -> dict:

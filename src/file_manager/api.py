@@ -52,7 +52,7 @@ try:
     from .remote_search import REMOTE_SECTIONS, REMOTE_SOURCES, search_remote_catalog
     from .scanner import scan_all_folders
     from .search import search_file_index
-    from .video_metadata import collect_video_folder_metadata
+    from .video_metadata import collect_video_folder_metadata, find_video_package_paths
     from .entertainment import preview_path, scan_entertainment, get_video_thumbnail, clear_thumbnail_cache, is_thumbnail_generation_available
 except ImportError:
     from config import load_config, load_remote_config, load_root_path, check_hard_drive_status
@@ -91,7 +91,7 @@ except ImportError:
     from remote_search import REMOTE_SECTIONS, REMOTE_SOURCES, search_remote_catalog
     from scanner import scan_all_folders
     from search import search_file_index
-    from video_metadata import collect_video_folder_metadata
+    from video_metadata import collect_video_folder_metadata, find_video_package_paths
     from entertainment import preview_path, scan_entertainment, get_video_thumbnail, clear_thumbnail_cache, is_thumbnail_generation_available
 
 app = FastAPI(title="File Manager API", version="1.0.0")
@@ -359,10 +359,25 @@ def _enrich_package_analytics(package: dict[str, Any]) -> dict[str, Any]:
 
 @app.get("/api/video-metadata")
 def get_video_metadata():
-    if not VIDEO_METADATA.exists():
+    videos_folder = load_config().get("videos")
+    data: dict[str, Any] = {}
+    if VIDEO_METADATA.exists():
+        with VIDEO_METADATA.open("r", encoding="utf-8") as f:
+            data = json.load(f)
+
+    if videos_folder and videos_folder.exists():
+        expected_paths = {
+            path.relative_to(videos_folder).as_posix()
+            for path in find_video_package_paths(videos_folder)
+        }
+        cached_paths = {package.get("path") for package in data.get("packages", [])}
+        if expected_paths != cached_paths:
+            save_video_metadata(collect_video_folder_metadata(videos_folder))
+            with VIDEO_METADATA.open("r", encoding="utf-8") as f:
+                data = json.load(f)
+
+    if not data:
         return {"packages": [], "quality_counts": {}, "total_size_readable": "0 B", "package_count": 0}
-    with VIDEO_METADATA.open("r", encoding="utf-8") as f:
-        data = json.load(f)
 
     enriched_packages = [_enrich_package_analytics(p) for p in data.get("packages", [])]
     return {
@@ -423,7 +438,6 @@ def move_download_files(req: BatchMoveRequest):
         if not src.exists():
             results.append({"source": item.source_path, "success": False, "error": "Source file not found"})
             continue
-
         dest_dir = local_root / item.target_package
         dest_dir.mkdir(parents=True, exist_ok=True)
         dest_file = dest_dir / item.target_name
@@ -797,7 +811,6 @@ def move_selected_to_remote(req: MoveSelectedRequest):
 
     if not remote_root.exists():
         raise HTTPException(status_code=400, detail="Remote drive is not connected.")
-
     local_pkg = local_root / req.package
     remote_pkg = remote_root / req.package
 
@@ -1003,6 +1016,8 @@ def rebuild_catalog_endpoint():
 
     # Always preserve existing to-be-downloaded from ALL sources
     existing_catalog = load_remote_catalog_if_exists()
+    if existing_catalog is not None and not drive_path.exists():
+        return existing_catalog
     existing_downloads: dict[str, list[str]] | None = None
     if existing_catalog is not None:
         existing_downloads = existing_catalog.get("to_be_downloaded", {})
@@ -1141,7 +1156,11 @@ def rename_audit_item(req: RenameItemRequest):
     root_path = load_root_path()
     local_folders = load_config()
 
-    folder_root = local_folders.get(req.folder.lower(), root_path / req.folder)
+    folder_root = (
+        root_path
+        if req.folder.casefold() in {"old but gold", "__root__"}
+        else local_folders.get(req.folder.lower(), root_path / req.folder)
+    )
     source_path = folder_root / req.path
 
     if not source_path.exists():
@@ -1183,7 +1202,11 @@ def rename_audit_batch(req: BatchRenameRequest):
     results = []
 
     for item in req.items:
-        folder_root = local_folders.get(item.folder.lower(), root_path / item.folder)
+        folder_root = (
+            root_path
+            if item.folder.casefold() in {"old but gold", "__root__"}
+            else local_folders.get(item.folder.lower(), root_path / item.folder)
+        )
         source_path = folder_root / item.path
         if not source_path.exists():
             source_path = root_path / item.folder / item.path
@@ -1268,6 +1291,7 @@ def delete_audit_ignore(name: str):
 @app.post("/api/rescan-all")
 def rescan_all():
     folders = load_config()
+    folders["__root__"] = load_root_path()
     files = scan_all_folders(folders)
     save_files(files)
 
@@ -1309,6 +1333,8 @@ def _resolve_open_path(req: OpenFileRequest) -> Path:
     folders = load_config()
     if req.folder:
         folder_key = req.folder.casefold()
+        if folder_key in {"old but gold", "__root__"}:
+            return (load_root_path() / req.path).resolve()
         matched = next((path for name, path in folders.items() if name.casefold() == folder_key), None)
         if matched is None:
             raise HTTPException(status_code=404, detail=f"Unknown folder '{req.folder}'.")
@@ -1359,7 +1385,7 @@ def open_local_file(req: OpenFileRequest):
 
 
 @app.get("/api/file-type-stats")
-def get_file_type_stats():
+def get_file_type_stats(exclude_new_folder: bool = True):
     """Aggregate file-type statistics per package (similar shape to video analytics)."""
     files = load_file_index()
     folders = load_config()
@@ -1368,13 +1394,20 @@ def get_file_type_stats():
 
     for entry in files:
         folder = entry.get("folder") or "unknown"
+        if exclude_new_folder and folder.casefold().replace(" ", "_") == "new_folder":
+            continue
         rel_path = entry.get("path") or entry.get("name") or ""
-        package_name = rel_path.split("/")[0] if "/" in rel_path.replace("\\", "/") else folder
-        # Use top-level folder as the package group, with subpackage when present
-        key = f"{folder}/{package_name}" if package_name and package_name != entry.get("name") else folder
-        display_name = package_name if package_name and package_name != entry.get("name") else folder
-        folder_root = folders.get(str(folder).lower(), load_root_path() / str(folder))
-        local_package_path = folder_root / package_name if package_name != folder else folder_root
+        normalized_path = rel_path.replace("\\", "/").strip("/")
+        path_parts = normalized_path.split("/") if normalized_path else []
+        package_name = "/".join(path_parts[:-1]) if len(path_parts) > 1 else folder
+        key = f"{folder}/{package_name}" if package_name != folder else folder
+        display_name = package_name
+        folder_root = (
+            load_root_path()
+            if folder.casefold() in {"old but gold", "__root__"}
+            else folders.get(str(folder).lower(), load_root_path() / str(folder))
+        )
+        local_package_path = folder_root / Path(*path_parts[:-1]) if len(path_parts) > 1 else folder_root
 
         pkg = packages.setdefault(key, {
             "id": key,
@@ -1424,7 +1457,11 @@ def get_file_type_stats():
             "size_bytes": 0,
             "extensions": {},
             "files": [],
-            "local_path": str(folders.get(str(folder).lower(), load_root_path() / str(folder))),
+            "local_path": str(
+                load_root_path()
+                if folder.casefold() in {"old but gold", "__root__"}
+                else folders.get(str(folder).lower(), load_root_path() / str(folder))
+            ),
         })
         summary["package_count"] += 1
         summary["file_count"] += pkg["file_count"]

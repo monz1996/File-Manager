@@ -109,6 +109,7 @@ def main():
 
 def _build_indexes() -> None:
     folders = load_config()
+    folders["__root__"] = load_root_path()
     files = scan_all_folders(folders)
 
     save_files(files)
@@ -154,6 +155,9 @@ def _run_remote_catalog() -> None:
     drive_path, remote_folders = load_remote_config()
     local_folders = load_config()
     existing_catalog = load_remote_catalog_if_exists()
+    if existing_catalog is not None and not drive_path.exists():
+        print(json.dumps(existing_catalog, indent=4, ensure_ascii=False))
+        return
     existing_downloads = None
     if (
         existing_catalog is not None

@@ -136,6 +136,14 @@ def _iter_entertainment_paths(root: Path):
         try:
             folders = load_config()
             folder_map = {name.casefold(): path for name, path in folders.items()}
+            folder_map["old but gold"] = root
+            folder_map["__root__"] = root
+            if root.exists():
+                folder_map.update({
+                    child.name.casefold(): child
+                    for child in root.iterdir()
+                    if child.is_dir()
+                })
             indexed_paths = []
             for entry in load_file_index():
                 folder_name = str(entry.get("folder", "")).casefold()
