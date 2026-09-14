@@ -890,18 +890,33 @@ def search_remote(
     query: str = Query(..., min_length=1),
     section: str = "all",
     source: str = "all",
+    category: str = "all",
     limit: int = 50,
 ):
     catalog = load_remote_catalog_if_exists()
     if not catalog:
         return {"query": query, "count": 0, "results": []}
 
-    results = search_remote_catalog(query, catalog, section=section, source=source, limit=limit)
-    return {"query": query, "count": len(results), "section": section, "source": source, "results": results}
+    results = search_remote_catalog(
+        query,
+        catalog,
+        section=section,
+        source=source,
+        category=category,
+        limit=limit,
+    )
+    return {
+        "query": query,
+        "count": len(results),
+        "section": section,
+        "source": source,
+        "category": category,
+        "results": results,
+    }
 
 
 @app.get("/api/search/unified")
-def search_unified(query: str = Query(..., min_length=1), limit: int = 40):
+def search_unified(query: str = Query(..., min_length=1), category: str = "all", limit: int = 40):
     files = [
         file for file in (load_file_index() if FILE_INDEX.exists() else [])
     ]
@@ -911,7 +926,7 @@ def search_unified(query: str = Query(..., min_length=1), limit: int = 40):
         r["location"] = "local"
 
     catalog = load_remote_catalog_if_exists()
-    remote_res = search_remote_catalog(query, catalog, limit=limit) if catalog else []
+    remote_res = search_remote_catalog(query, catalog, category=category, limit=limit) if catalog else []
     # Tag each remote result with location
     for r in remote_res:
         r["location"] = "remote_drive" if r.get("remote_source") == "names" else "remote_catalog"

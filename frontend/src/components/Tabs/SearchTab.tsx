@@ -23,6 +23,8 @@ export const SearchTab: React.FC = () => {
 
   const [remoteSection, setRemoteSection] = useState<string>('all');
   const [remoteSource, setRemoteSource] = useState<string>('all');
+  const [movieCategory, setMovieCategory] = useState<string>('all');
+  const [movieCategories, setMovieCategories] = useState<string[]>([]);
 
   const [localResults, setLocalResults] = useState<any[]>([]);
   const [remoteResults, setRemoteResults] = useState<any[]>([]);
@@ -34,6 +36,16 @@ export const SearchTab: React.FC = () => {
     if (copiedTimeoutRef.current) {
       clearTimeout(copiedTimeoutRef.current);
     }
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/remote-catalog')
+      .then((res) => {
+        if (!res.ok) throw new Error(`Remote catalog request failed: ${res.status}`);
+        return res.json();
+      })
+      .then((data) => setMovieCategories(data.categories?.movies || []))
+      .catch((err) => console.error(err));
   }, []);
 
   const catalogResults = remoteResults.filter(
@@ -61,7 +73,7 @@ export const SearchTab: React.FC = () => {
         setRemoteResults([]);
       } else if (searchMode === 'remote') {
         const res = await fetch(
-          `/api/search/remote?query=${encodeURIComponent(query)}&section=${remoteSection}&source=${remoteSource}&limit=${limit}`
+          `/api/search/remote?query=${encodeURIComponent(query)}&section=${remoteSection}&source=${remoteSource}&category=${encodeURIComponent(movieCategory)}&limit=${limit}`
         );
         const data = await res.json();
         const results = (data.results || []).map((r: any) => ({
@@ -71,7 +83,7 @@ export const SearchTab: React.FC = () => {
         setRemoteResults(results);
         setLocalResults([]);
       } else {
-        const res = await fetch(`/api/search/unified?query=${encodeURIComponent(query)}&limit=${limit}`);
+        const res = await fetch(`/api/search/unified?query=${encodeURIComponent(query)}&category=${encodeURIComponent(movieCategory)}&limit=${limit}`);
         const data = await res.json();
         setLocalResults(data.local?.results || []);
         setRemoteResults(data.remote?.results || []);
@@ -163,7 +175,7 @@ export const SearchTab: React.FC = () => {
           )}
           {item.remote_section && (
             <span className="text-[11px] text-yellow-200 font-medium block mt-0.5">
-              Category: {item.remote_section}
+              Category: {item.category || item.remote_section}
             </span>
           )}
         </div>
@@ -326,6 +338,21 @@ export const SearchTab: React.FC = () => {
                   ))}
                 </select>
               </div>
+              {remoteSection === 'movies' && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-slate-300">Movie category:</span>
+                  <select
+                    value={movieCategory}
+                    onChange={(e) => setMovieCategory(e.target.value)}
+                    className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-600 text-slate-200 focus:outline-none focus:border-indigo-400 cursor-pointer"
+                  >
+                    <option value="all">All Categories</option>
+                    {movieCategories.map((category) => (
+                      <option key={category} value={category}>{category}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div className="flex items-center gap-1.5">
                 <span className="text-slate-300">Source:</span>
                 <select

@@ -24,6 +24,7 @@ export const RemoteCatalogTab: React.FC = () => {
   const [bulkText, setBulkText] = useState('');
   const [showBulkAdd, setShowBulkAdd] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [movieCategory, setMovieCategory] = useState('all');
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [rebuilding, setRebuilding] = useState(false);
   const [pendingRemoval, setPendingRemoval] = useState<{ section: string; name: string } | null>(null);
@@ -140,8 +141,12 @@ export const RemoteCatalogTab: React.FC = () => {
   const filteredTbd = tobeDownloadedList.filter((item) =>
     item.toLowerCase().includes(searchQuery.toLowerCase())
   );
+  const getMovieCategory = (item: string) =>
+    catalog?.movie_categories?.[item] ||
+    (item.includes('/') ? item.split('/').slice(0, -1).join(' / ') : 'Uncategorized');
   const filteredCatalog = catalogList.filter((item) =>
-    item.toLowerCase().includes(searchQuery.toLowerCase())
+    item.toLowerCase().includes(searchQuery.toLowerCase()) &&
+    (activeSection !== 'movies' || movieCategory === 'all' || getMovieCategory(item) === movieCategory)
   );
 
   const getSectionIcon = (sec: string) => {
@@ -268,6 +273,18 @@ export const RemoteCatalogTab: React.FC = () => {
             className="pl-8 pr-3 py-1.5 rounded-lg bg-slate-900/80 border border-slate-600 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-400"
           />
         </div>
+        {activeSection === 'movies' && activeView === 'catalog' && (
+          <select
+            value={movieCategory}
+            onChange={(e) => setMovieCategory(e.target.value)}
+            className="px-2.5 py-1.5 rounded-lg bg-slate-900/80 border border-slate-600 text-xs text-slate-200 focus:outline-none focus:border-indigo-400"
+          >
+            <option value="all">All movie categories</option>
+            {(catalog?.categories?.movies || []).map((category: string) => (
+              <option key={category} value={category}>{category}</option>
+            ))}
+          </select>
+        )}
       </div>
 
       {/* Add New Title to "To Be Downloaded" Bar */}

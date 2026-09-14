@@ -17,6 +17,7 @@ def search_remote_catalog(
     catalog: dict[str, Any],
     section: str = "all",
     source: str = "all",
+    category: str = "all",
     limit: int = 20,
 ) -> list[dict[str, Any]]:
     if section not in REMOTE_SECTIONS:
@@ -26,8 +27,10 @@ def search_remote_catalog(
     if source not in REMOTE_SOURCES:
         expected = ", ".join(sorted(REMOTE_SOURCES))
         raise ValueError(f"Unsupported source '{source}'. Expected one of: {expected}.")
+    if category.strip() == "":
+        category = "all"
 
-    entries = _catalog_search_entries(catalog, section=section, source=source)
+    entries = _catalog_search_entries(catalog, section=section, source=source, category=category)
 
     return search_file_index(query, entries, limit=limit, sort_by="match")
 
@@ -36,6 +39,7 @@ def _catalog_search_entries(
     catalog: dict[str, Any],
     section: str,
     source: str,
+    category: str,
 ) -> list[dict[str, Any]]:
     selected_sections = _selected_sections(catalog, section)
     entries = []
@@ -61,6 +65,9 @@ def _catalog_search_entries(
             )
 
         for name in names:
+            movie_category = _movie_category(catalog, section_name, name)
+            if category != "all" and section_name == "movies" and movie_category.casefold() != category.casefold():
+                continue
             normalized = _normalize_name(name)
             is_to_be_downloaded = normalized in downloaded_lookup
             in_names = normalized in names_lookup
@@ -70,16 +77,28 @@ def _catalog_search_entries(
             else:
                 entry_source = "names" if in_names else "to_be_downloaded"
 
+            display_name = name.rsplit("/", 1)[-1].rsplit("\\", 1)[-1]
             entries.append({
                 "folder": section_name,
                 "path": name,
-                "name": name,
+                "name": display_name,
                 "remote_section": section_name,
+                "category": movie_category if section_name == "movies" else None,
                 "remote_source": entry_source,
                 "is_to_be_downloaded": is_to_be_downloaded,
             })
 
     return entries
+
+
+def _movie_category(catalog: dict[str, Any], section: str, name: str) -> str:
+    if section != "movies":
+        return ""
+    category = catalog.get("movie_categories", {}).get(name)
+    if isinstance(category, str) and category.strip():
+        return category
+    parts = name.replace("\\", "/").split("/")
+    return " / ".join(parts[:-1]) if len(parts) > 1 else "Uncategorized"
 
 
 def _selected_sections(catalog: dict[str, Any], section: str) -> list[str]:

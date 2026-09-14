@@ -37,6 +37,8 @@ def build_remote_catalog(
         "names": _empty_sections(),
         "to_be_downloaded": _to_be_downloaded(existing_to_be_downloaded),
         "to_be_downloaded_mode": "manual",
+        "categories": {"movies": []},
+        "movie_categories": {},
         "sources": {},
     }
 
@@ -50,6 +52,16 @@ def build_remote_catalog(
         local_names = _collect_section_names(section, local_path)
 
         catalog["names"][section] = remote_names
+        if section == "movies":
+            movie_categories = {
+                name: _movie_category(name)
+                for name in remote_names
+            }
+            catalog["movie_categories"] = movie_categories
+            catalog["categories"]["movies"] = sorted(
+                set(movie_categories.values()),
+                key=str.casefold,
+            )
         catalog["sources"][section] = {
             "remote_path": str(remote_path),
             "remote_available": remote_path.exists(),
@@ -100,12 +112,17 @@ def _top_level_file_and_folder_names(path: Path) -> list[str]:
 def _recursive_file_names(path: Path) -> list[str]:
     return sorted(
         {
-            item.name
+            item.relative_to(path).as_posix()
             for item in path.rglob("*")
             if item.is_file() and not is_hidden_or_system(item)
         },
         key=str.casefold,
     )
+
+
+def _movie_category(relative_path: str) -> str:
+    parts = Path(relative_path).parts
+    return " / ".join(parts[:-1]) if len(parts) > 1 else "Uncategorized"
 
 
 def _section_path(
