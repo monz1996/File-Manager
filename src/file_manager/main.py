@@ -156,7 +156,7 @@ def _run_remote_catalog() -> None:
     local_folders = load_config()
     existing_catalog = load_remote_catalog_if_exists()
     if existing_catalog is not None and not drive_path.exists():
-        print(json.dumps(existing_catalog, indent=4, ensure_ascii=False))
+        print(json.dumps(existing_catalog, indent=4, ensure_ascii=True))
         return
     existing_downloads = None
     if (
@@ -173,7 +173,7 @@ def _run_remote_catalog() -> None:
     )
     save_remote_catalog(catalog)
 
-    print(json.dumps(catalog, indent=4, ensure_ascii=False))
+    print(json.dumps(catalog, indent=4, ensure_ascii=True))
 
 
 def _run_remote_search(query: str, limit: int, section: str, source: str) -> None:
@@ -194,7 +194,7 @@ def _run_remote_search(query: str, limit: int, section: str, source: str) -> Non
             "results": results,
         },
         indent=4,
-        ensure_ascii=False,
+        ensure_ascii=True,
     ))
 
 
@@ -228,7 +228,7 @@ def _run_remote_add_download(section: str, name: str) -> None:
             "to_be_downloaded": section_downloads,
         },
         indent=4,
-        ensure_ascii=False,
+        ensure_ascii=True,
     ))
 
 

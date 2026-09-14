@@ -283,8 +283,19 @@
             "size_bytes": 1709,
             "created_at": "2026-09-13T01:39:31+03:00",
             "created_timestamp": 1789252771.9246273,
-            "modified_at": "2026-09-13T20:37:52+03:00",
-            "modified_timestamp": 1789321072.7021952
+            "modified_at": "2026-09-14T23:48:04+03:00",
+            "modified_timestamp": 1789418884.5246358
+        },
+        {
+            "folder": "content",
+            "name": "Anime.txt",
+            "path": "Anime.txt",
+            "extension": ".txt",
+            "size_bytes": 1226,
+            "created_at": "2026-08-22T14:23:18+03:00",
+            "created_timestamp": 1787397798.0042312,
+            "modified_at": "2026-08-04T11:15:50+03:00",
+            "modified_timestamp": 1785831350.532999
         },
         {
             "folder": "content",
@@ -294,19 +305,41 @@
             "size_bytes": 1289,
             "created_at": "2026-09-13T01:39:31+03:00",
             "created_timestamp": 1789252771.9246273,
-            "modified_at": "2026-09-13T20:37:52+03:00",
-            "modified_timestamp": 1789321072.7021952
+            "modified_at": "2026-09-14T23:48:04+03:00",
+            "modified_timestamp": 1789418884.5246358
+        },
+        {
+            "folder": "content",
+            "name": "games.txt",
+            "path": "games.txt",
+            "extension": ".txt",
+            "size_bytes": 856,
+            "created_at": "2026-08-22T14:23:18+03:00",
+            "created_timestamp": 1787397798.0198567,
+            "modified_at": "2026-06-07T19:48:11+03:00",
+            "modified_timestamp": 1780850891.8218434
         },
         {
             "folder": "content",
             "name": "Movies.json",
             "path": "Movies.json",
             "extension": ".json",
-            "size_bytes": 22598,
+            "size_bytes": 22633,
             "created_at": "2026-09-13T01:39:31+03:00",
             "created_timestamp": 1789252771.9246273,
-            "modified_at": "2026-09-13T20:37:52+03:00",
-            "modified_timestamp": 1789321072.7021952
+            "modified_at": "2026-09-14T23:48:04+03:00",
+            "modified_timestamp": 1789418884.5256817
+        },
+        {
+            "folder": "content",
+            "name": "movies.txt",
+            "path": "movies.txt",
+            "extension": ".txt",
+            "size_bytes": 17445,
+            "created_at": "2026-08-22T14:23:18+03:00",
+            "created_timestamp": 1787397798.0354826,
+            "modified_at": "2026-09-11T17:17:22+03:00",
+            "modified_timestamp": 1789136242.427297
         },
         {
             "folder": "content",
@@ -316,8 +349,19 @@
             "size_bytes": 1493,
             "created_at": "2026-09-13T01:39:31+03:00",
             "created_timestamp": 1789252771.9246273,
-            "modified_at": "2026-09-13T20:37:52+03:00",
-            "modified_timestamp": 1789321072.7021952
+            "modified_at": "2026-09-14T23:48:04+03:00",
+            "modified_timestamp": 1789418884.5256817
+        },
+        {
+            "folder": "content",
+            "name": "series.txt",
+            "path": "series.txt",
+            "extension": ".txt",
+            "size_bytes": 914,
+            "created_at": "2026-08-22T14:23:18+03:00",
+            "created_timestamp": 1787397798.0979867,
+            "modified_at": "2026-09-12T09:59:22+03:00",
+            "modified_timestamp": 1789196362.6628597
         },
         {
             "folder": "lol",

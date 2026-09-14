@@ -51,10 +51,7 @@ def load_remote_catalog_if_exists() -> dict[str, Any] | None:
             return local_content_cat
         return None
 
-    cat = load_remote_catalog()
-    # Merge with any extra to_be_downloaded found in local or remote Content json files
-    _merge_persisted_to_be_downloaded(cat)
-    return cat
+    return load_remote_catalog()
 
 
 def _load_from_content_json_files() -> dict[str, Any] | None:

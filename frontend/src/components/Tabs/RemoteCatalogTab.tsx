@@ -26,6 +26,7 @@ export const RemoteCatalogTab: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [rebuilding, setRebuilding] = useState(false);
+  const [pendingRemoval, setPendingRemoval] = useState<{ section: string; name: string } | null>(null);
 
   const fetchCatalog = async () => {
     try {
@@ -92,7 +93,10 @@ export const RemoteCatalogTab: React.FC = () => {
     }
   };
 
-  const handleRemove = async (section: string, name: string) => {
+  const handleRemove = async () => {
+    if (!pendingRemoval) return;
+
+    const { section, name } = pendingRemoval;
     try {
       const res = await fetch('/api/remote-catalog/remove-download', {
         method: 'POST',
@@ -100,10 +104,14 @@ export const RemoteCatalogTab: React.FC = () => {
         body: JSON.stringify({ section, name }),
       });
       if (res.ok) {
+        setPendingRemoval(null);
         fetchCatalog();
+      } else {
+        const data = await res.json();
+        setFeedback({ type: 'error', message: data.detail || 'Failed to remove title.' });
       }
     } catch (err) {
-      console.error(err);
+      setFeedback({ type: 'error', message: 'Network error while removing title.' });
     }
   };
 
@@ -344,7 +352,7 @@ export const RemoteCatalogTab: React.FC = () => {
                   <span className="text-xs font-semibold text-slate-200">{name}</span>
                 </div>
                 <button
-                  onClick={() => handleRemove(activeSection, name)}
+                  onClick={() => setPendingRemoval({ section: activeSection, name })}
                   className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-700 transition cursor-pointer"
                   title="Remove from download queue"
                 >
@@ -372,6 +380,53 @@ export const RemoteCatalogTab: React.FC = () => {
           </div>
         )}
       </div>
+
+      {pendingRemoval && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm"
+          role="presentation"
+          onClick={() => setPendingRemoval(null)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="remove-queue-title"
+            className="w-full max-w-md rounded-2xl border border-slate-600 bg-slate-800 p-6 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start gap-3">
+              <div className="rounded-xl bg-rose-500/10 p-2 text-rose-400">
+                <Trash2 className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <h3 id="remove-queue-title" className="text-base font-bold text-white">
+                  Remove from download queue?
+                </h3>
+                <p className="mt-2 break-words text-xs leading-5 text-slate-300">
+                  This will remove <span className="font-semibold text-white">{pendingRemoval.name}</span> from the{' '}
+                  <span className="font-semibold capitalize text-white">{pendingRemoval.section}</span> list.
+                </p>
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setPendingRemoval(null)}
+                className="rounded-lg bg-slate-700 px-4 py-2 text-xs font-medium text-slate-200 transition hover:bg-slate-600"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleRemove}
+                className="rounded-lg bg-rose-500 px-4 py-2 text-xs font-semibold text-white transition hover:bg-rose-400"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

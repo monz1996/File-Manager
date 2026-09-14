@@ -176,7 +176,10 @@ export const VideoAnalyticsTab: React.FC = () => {
 
   // Filter & sort packages
   const filteredPackages = packages
-    .filter((pkg) => pkg.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    .filter((pkg) => {
+      const query = searchQuery.trim().toLowerCase();
+      return !query || `${pkg.name} ${pkg.path}`.toLowerCase().includes(query);
+    })
     .sort((a, b) => {
       if (sortOption === 'size') return b.size_bytes - a.size_bytes;
       if (sortOption === 'count') return b.video_count - a.video_count;
@@ -407,7 +410,7 @@ export const VideoAnalyticsTab: React.FC = () => {
                       <Film className="w-4 h-4 text-indigo-400" />
                       {pkg.name}
                     </h4>
-                    <span className="text-[11px] text-slate-400 font-mono">{pkg.path}</span>
+                    <span className="text-[11px] text-slate-400 font-mono">{pkg.path || '.'}</span>
                   </div>
 
                   <div className="text-right">
@@ -558,7 +561,7 @@ export const VideoAnalyticsTab: React.FC = () => {
                 <div>
                   <h3 className="text-base font-bold text-white">{selectedPackage.name}</h3>
                   <p className="text-xs text-slate-400">
-                    {selectedPackage.video_count} videos | {selectedPackage.size_readable} | {selectedPackage.total_duration_readable} total duration
+                    {selectedPackage.path || '.'} · {selectedPackage.video_count} videos | {selectedPackage.size_readable} | {selectedPackage.total_duration_readable} total duration
                   </p>
                 </div>
               </div>

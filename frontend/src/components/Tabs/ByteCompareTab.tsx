@@ -21,6 +21,7 @@ interface PackageOption {
   id: string;
   folder: string;
   name: string;
+  relative_path?: string;
   file_count: number;
   size_readable: string;
   local_path: string;
@@ -65,6 +66,7 @@ export const ByteCompareTab: React.FC<ByteCompareTabProps> = ({ currentOperation
           id: `folder:${folder.folder}`,
           folder: folder.folder,
           name: folder.folder,
+          relative_path: folder.relative_path || folder.folder,
           file_count: folder.file_count,
           size_readable: folder.size_readable,
           local_path: folder.local_path,
@@ -73,6 +75,7 @@ export const ByteCompareTab: React.FC<ByteCompareTabProps> = ({ currentOperation
           id: `package:${pkg.id}`,
           folder: pkg.folder,
           name: pkg.name,
+          relative_path: pkg.relative_path || pkg.name,
           file_count: pkg.file_count,
           size_readable: pkg.size_readable,
           local_path: pkg.local_path,
@@ -220,8 +223,8 @@ export const ByteCompareTab: React.FC<ByteCompareTabProps> = ({ currentOperation
                     : 'bg-slate-900 border-slate-600 hover:border-indigo-400/60'
                 }`}
               >
-                <p className="text-xs font-bold text-white truncate" title={pkg.name}>{pkg.name}</p>
-                <p className="text-[11px] text-indigo-300 mt-1">{pkg.folder}</p>
+                <p className="text-xs font-bold text-white truncate" title={pkg.name}>{pkg.name.split(/[\\/]/).pop() || pkg.name}</p>
+                <p className="text-[11px] text-indigo-300 mt-1">{pkg.relative_path || pkg.name}</p>
                 <p className="text-[11px] text-slate-400 mt-1">{pkg.file_count} files · {pkg.size_readable}</p>
               </button>
             ))}

@@ -1413,6 +1413,7 @@ def get_file_type_stats(exclude_new_folder: bool = True):
             "id": key,
             "folder": folder,
             "name": display_name,
+            "relative_path": package_name if package_name != folder else folder,
             "file_count": 0,
             "size_bytes": 0,
             "extensions": {},
@@ -1462,6 +1463,7 @@ def get_file_type_stats(exclude_new_folder: bool = True):
                 if folder.casefold() in {"old but gold", "__root__"}
                 else folders.get(str(folder).lower(), load_root_path() / str(folder))
             ),
+            "relative_path": folder,
         })
         summary["package_count"] += 1
         summary["file_count"] += pkg["file_count"]

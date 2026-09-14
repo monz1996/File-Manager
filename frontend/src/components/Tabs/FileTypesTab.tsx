@@ -27,6 +27,7 @@ interface PackageStats {
   id: string;
   folder: string;
   name: string;
+  relative_path?: string;
   file_count: number;
   size_bytes: number;
   size_readable: string;
@@ -50,6 +51,7 @@ interface FileTypeStatsResponse {
   total_size_readable: string;
   folders: Array<{
     folder: string;
+    relative_path?: string;
     package_count: number;
     file_count: number;
     size_bytes: number;
@@ -80,6 +82,7 @@ export const FileTypesTab: React.FC = () => {
       ...folder,
       id: `folder:${folder.folder}`,
       name: folder.folder,
+      relative_path: folder.relative_path || folder.folder,
       extension_count: Object.keys(folder.extensions).length,
       top_extension: Object.entries(folder.extensions)
         .sort((left, right) => right[1] - left[1])[0]?.[0] || '',
@@ -148,6 +151,9 @@ export const FileTypesTab: React.FC = () => {
     allPackages.filter((pkg) => folderFilter === 'all' || pkg.folder === folderFilter),
     searchQuery,
   );
+
+  const packageDisplayName = (pkg: PackageStats) => pkg.name.split(/[\\/]/).pop() || pkg.name;
+  const packageRelativePath = (pkg: PackageStats) => pkg.relative_path || pkg.name;
 
   const overallExtCounts: Record<string, number> = {};
   for (const pkg of packages) {
@@ -269,9 +275,9 @@ export const FileTypesTab: React.FC = () => {
           <div key={pkg.id} className="p-4 rounded-xl bg-slate-900 border border-slate-600 hover:border-blue-400/50 transition space-y-3">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <p className="text-sm font-bold text-white truncate" title={pkg.name}>{pkg.name}</p>
+                <p className="text-sm font-bold text-white truncate" title={packageDisplayName(pkg)}>{packageDisplayName(pkg)}</p>
                 <p className="text-[11px] text-blue-300 flex items-center gap-1 mt-0.5">
-                  <Folder className="w-3 h-3" /> {pkg.folder}
+                  <Folder className="w-3 h-3" /> {packageRelativePath(pkg)}
                 </p>
               </div>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-200 border border-yellow-500/40 shrink-0">
@@ -309,9 +315,9 @@ export const FileTypesTab: React.FC = () => {
           >
             <div className="px-6 py-4 border-b border-slate-700 flex items-center justify-between bg-slate-950 gap-3">
               <div className="min-w-0">
-                <h3 className="text-base font-bold text-white truncate">{selectedPackage.name}</h3>
+                <h3 className="text-base font-bold text-white truncate">{packageDisplayName(selectedPackage)}</h3>
                 <p className="text-xs text-blue-200">
-                  {selectedPackage.folder} · {selectedPackage.file_count} files · {selectedPackage.size_readable}
+                  {packageRelativePath(selectedPackage)} · {selectedPackage.file_count} files · {selectedPackage.size_readable}
                 </p>
               </div>
               <button

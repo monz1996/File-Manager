@@ -34,7 +34,7 @@ def collect_video_folder_metadata(videos_folder: Path) -> dict:
         package_paths,
         key=lambda path: path.relative_to(videos_folder).as_posix().casefold(),
     ):
-        package_files = [path for path in package_path.rglob("*") if path.is_file()]
+        package_files = [path for path in package_path.iterdir() if path.is_file()]
         video_files = [
             path for path in package_files
             if path.suffix.casefold() in VIDEO_EXTENSIONS
@@ -106,11 +106,11 @@ def collect_video_folder_metadata(videos_folder: Path) -> dict:
 
 
 def find_video_package_paths(videos_folder: Path) -> list[Path]:
-    """Return every non-empty package directory, including nested packages."""
+    """Return package directories that directly contain files, including nested packages."""
     package_paths = [
         path
         for path in videos_folder.rglob("*")
-        if path.is_dir() and any(child.is_file() for child in path.rglob("*"))
+        if path.is_dir() and any(child.is_file() for child in path.iterdir())
     ]
     if videos_folder.is_dir() and any(child.is_file() for child in videos_folder.iterdir()):
         package_paths.append(videos_folder)

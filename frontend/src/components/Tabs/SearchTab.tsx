@@ -385,15 +385,17 @@ export const SearchTab: React.FC = () => {
               <div className="space-y-3">
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
                   <Database className="w-4 h-4 text-orange-300" />
-                  Remote Catalog Search ({catalogResults.length})
+                  Pending Downloads ({catalogResults.length})
                 </h3>
                 <p className="text-[11px] text-orange-200">
-                  Catalog entries are names only — clicking does not open files.
+                  Items in the catalog that are not currently on the remote drive. Clicking does not open files.
                 </p>
                 {catalogResults.length === 0 ? (
-                  <p className="text-xs text-blue-100 p-6 rounded-xl bg-slate-900 border border-slate-700 text-center">
-                    No remote catalog entries matched.
-                  </p>
+                  remoteResults.length === 0 ? (
+                    <p className="text-xs text-blue-100 p-6 rounded-xl bg-slate-900 border border-slate-700 text-center">
+                      No pending downloads matched.
+                    </p>
+                  ) : null
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
                     {catalogResults.map((item, idx) => (
@@ -409,9 +411,11 @@ export const SearchTab: React.FC = () => {
                   Cataloged On Drive ({driveNameResults.length})
                 </h3>
                 {driveNameResults.length === 0 ? (
-                  <p className="text-xs text-blue-100 p-6 rounded-xl bg-slate-900 border border-slate-700 text-center">
-                    No drive catalog names matched.
-                  </p>
+                  remoteResults.length === 0 ? (
+                    <p className="text-xs text-blue-100 p-6 rounded-xl bg-slate-900 border border-slate-700 text-center">
+                      No remote drive catalog names matched.
+                    </p>
+                  ) : null
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
                     {driveNameResults.map((item, idx) => (
